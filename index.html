@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>code_cam</title>
+<style>
+  :root { --fg: #39ff6a; --bg: #000; --dim: #0f3a1c; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; background: var(--bg); color: var(--fg);
+    font-family: "DejaVu Sans Mono", Menlo, Consolas, monospace; overflow: hidden;
+    -webkit-user-select: none; user-select: none; touch-action: none; }
+  #stage { position: fixed; inset: 0; }
+  video, canvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  video { visibility: hidden; }
+  body.normal video { visibility: visible; }
+  body.normal #ascii { visibility: hidden; }
+  /* scanlines estáticas: sin parpadeo */
+  #scan { position: absolute; inset: 0; pointer-events: none;
+    background: repeating-linear-gradient(0deg, rgba(0,0,0,.18) 0 1px, transparent 1px 3px); }
+  body.normal #scan { display: none; }
+  #hud { position: fixed; left: 0; right: 0; bottom: 0; padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+    display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;
+    background: linear-gradient(transparent, rgba(0,0,0,.85)); }
+  button { font: inherit; font-size: 14px; color: var(--fg); background: rgba(0,0,0,.6);
+    border: 1px solid var(--fg); padding: 10px 14px; border-radius: 2px; min-width: 44px; }
+  button:active { background: var(--dim); }
+  #top { position: fixed; top: 0; left: 0; right: 0; padding: calc(10px + env(safe-area-inset-top)) 16px 10px;
+    font-size: 12px; display: flex; justify-content: space-between; pointer-events: none;
+    text-shadow: 0 0 4px #000; }
+  #gate { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center;
+    justify-content: center; gap: 18px; padding: 24px; text-align: center; background: #000; z-index: 5; }
+  #gate pre { font-size: 13px; line-height: 1.2; }
+  #gate p { max-width: 32ch; font-size: 14px; line-height: 1.5; opacity: .85; }
+  .glitch { display: inline-block; transform: skewX(-8deg); }
+</style>
+</head>
+<body>
+<div id="stage">
+  <video id="video" playsinline muted></video>
+  <canvas id="ascii"></canvas>
+  <div id="scan"></div>
+</div>
+
+<div id="top"><span>NarthexOS // code_cam</span><span id="stats"></span></div>
+
+<div id="hud">
+  <button id="btnMode">cámara normal</button>
+  <button id="btnMinus">−</button>
+  <button id="btnPlus">+</button>
+  <button id="btnRamp">charset</button>
+  <button id="btnFlip">⟲ cam</button>
+</div>
+
+<div id="gate">
+<pre>
+ _  _              _   _
+| \| |__ _ _ _ ___| |_| |_  _____ __
+| .` / _` | '_|  _|   \  _|/ -_) \ /
+|_|\_\__,_|_|  \__|_||_\__|\___/_\_\
+</pre>
+  <p><span class="glitch">c0de_cam</span> necesita ver lo que tú ves.<br>
+     Nada sale de este teléfono. Bueno, de <em>tu</em> teléfono.</p>
+  <button id="btnStart">abrir code_cam</button>
+  <p id="err" style="color:#ff5a5a"></p>
+</div>
+
+<script>
+(() => {
+  // Rampas de caracteres, de oscuro a claro
+  const RAMPS = [
+    " .:-=+*#%@",
+    " .'`^\",:;Il!i><~+_-?][}{1)(|/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$",
+    " 01",
+    " ░▒▓█",
+  ];
+  let rampIdx = 0;
+  let cellPx = 10;              // alto de celda en píxeles CSS
+  const CELL_MIN = 6, CELL_MAX = 24;
+  let facing = "environment";
+  let stream = null;
+  let mirror = false;
+  let demo = false;
+
+  const video = document.getElementById("video");
+  const out = document.getElementById("ascii");
+  const ctx = out.getContext("2d");
+  const small = document.createElement("canvas");
+  const sctx = small.getContext("2d", { willReadFrequently: true });
+  const stats = document.getElementById("stats");
+
+  // Proporción de un carácter monoespaciado (ancho/alto)
+  const CHAR_ASPECT = 0.6;
+
+  function resize() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    out.width = Math.round(innerWidth * dpr);
+    out.height = Math.round(innerHeight * dpr);
+  }
+  addEventListener("resize", resize);
+  resize();
+
+  async function startCamera() {
+    if (stream) stream.getTracks().forEach(t => t.stop());
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: facing }, width: { ideal: 1280 }, height: { ideal: 720 } },
+      audio: false,
+    });
+    video.srcObject = stream;
+    await video.play();
+    // La webcam del portátil no informa "environment": se trata como frontal y se espeja
+    const s = stream.getVideoTracks()[0].getSettings();
+    mirror = s.facingMode ? s.facingMode === "user" : true;
+  }
+
+  // Fondo sintético si no hay cámara (para probar en escritorio)
+  function drawDemo(t, w, h) {
+    const g = sctx.createRadialGradient(
+      w * (0.5 + 0.3 * Math.sin(t / 1700)), h * (0.5 + 0.3 * Math.cos(t / 2300)), 1,
+      w / 2, h / 2, Math.max(w, h) * 0.8);
+    g.addColorStop(0, "#fff"); g.addColorStop(0.4, "#777"); g.addColorStop(1, "#000");
+    sctx.fillStyle = g; sctx.fillRect(0, 0, w, h);
+    // la silueta del suelo
+    sctx.fillStyle = "#111";
+    sctx.beginPath(); sctx.ellipse(w * .5, h * .72, w * .18, h * .06, 0, 0, Math.PI * 2); sctx.fill();
+  }
+
+  // Dibuja el vídeo recortado tipo "cover" en el canvas pequeño
+  function drawCover(w, h) {
+    const vw = video.videoWidth, vh = video.videoHeight;
+    if (!vw) return false;
+    const scale = Math.max(w / vw, h / vh);
+    const dw = vw * scale, dh = vh * scale;
+    sctx.save();
+    if (mirror) { sctx.translate(w, 0); sctx.scale(-1, 1); }
+    sctx.drawImage(video, (w - dw) / 2, (h - dh) / 2, dw, dh);
+    sctx.restore();
+    return true;
+  }
+
+  let last = performance.now(), frames = 0, fps = 0;
+
+  function frame(t) {
+    requestAnimationFrame(frame);
+    if (document.body.classList.contains("normal")) return;
+
+    const dpr = out.width / innerWidth;
+    const ch = cellPx * dpr;
+    const cw = ch * CHAR_ASPECT;
+    const cols = Math.max(8, Math.floor(out.width / cw));
+    const rows = Math.max(8, Math.floor(out.height / ch));
+    if (small.width !== cols || small.height !== rows) { small.width = cols; small.height = rows; }
+
+    if (demo || !drawCover(cols, rows)) drawDemo(t, cols, rows);
+
+    const px = sctx.getImageData(0, 0, cols, rows).data;
+
+    // Niveles automáticos: estira el contraste entre los percentiles 2 y 98
+    const lum = new Float32Array(cols * rows);
+    const hist = new Uint32Array(256);
+    for (let i = 0, j = 0; j < lum.length; i += 4, j++) {
+      const y = (px[i] * 0.299 + px[i + 1] * 0.587 + px[i + 2] * 0.114) | 0;
+      lum[j] = y; hist[y]++;
+    }
+    let lo = 0, hi = 255, acc = 0;
+    const n = lum.length;
+    for (let v = 0; v < 256; v++) { acc += hist[v]; if (acc > n * 0.02) { lo = v; break; } }
+    acc = 0;
+    for (let v = 255; v >= 0; v--) { acc += hist[v]; if (acc > n * 0.02) { hi = v; break; } }
+    const range = Math.max(24, hi - lo);
+
+    const ramp = RAMPS[rampIdx];
+    const rl = ramp.length - 1;
+
+    ctx.fillStyle = "#000";
+    ctx.fillRect(0, 0, out.width, out.height);
+    ctx.font = `${ch}px "DejaVu Sans Mono", Menlo, Consolas, monospace`;
+    ctx.textBaseline = "top";
+    ctx.fillStyle = "#39ff6a";
+
+    const offX = (out.width - cols * cw) / 2;
+    const offY = (out.height - rows * ch) / 2;
+    for (let r = 0; r < rows; r++) {
+      let line = "";
+      for (let c = 0; c < cols; c++) {
+        let v = (lum[r * cols + c] - lo) / range;
+        v = v < 0 ? 0 : v > 1 ? 1 : v;
+        line += ramp[Math.round(v * rl)];
+      }
+      // fillText con maxWidth fuerza la rejilla aunque la fuente no sea exactamente 0.6
+      ctx.fillText(line, offX, offY + r * ch, cols * cw);
+    }
+
+    frames++;
+    if (t - last > 1000) { fps = frames; frames = 0; last = t; stats.textContent = `${cols}×${rows} · ${fps} fps`; }
+  }
+
+  // Controles
+  document.getElementById("btnMode").onclick = (e) => {
+    const normal = document.body.classList.toggle("normal");
+    e.target.textContent = normal ? "code_cam" : "cámara normal";
+  };
+  document.getElementById("btnMinus").onclick = () => { cellPx = Math.max(CELL_MIN, cellPx - 2); };
+  document.getElementById("btnPlus").onclick = () => { cellPx = Math.min(CELL_MAX, cellPx + 2); };
+  document.getElementById("btnRamp").onclick = () => { rampIdx = (rampIdx + 1) % RAMPS.length; };
+  document.getElementById("btnFlip").onclick = async () => {
+    if (demo) return;
+    facing = facing === "environment" ? "user" : "environment";
+    try { await startCamera(); } catch (e) { console.warn(e); }
+  };
+
+  document.getElementById("btnStart").onclick = async () => {
+    const err = document.getElementById("err");
+    try {
+      if (!navigator.mediaDevices?.getUserMedia) throw new Error("Este navegador no da acceso a la cámara (¿falta HTTPS?).");
+      await startCamera();
+    } catch (e) {
+      err.textContent = `${e.message || e} — modo demo sin cámara.`;
+      demo = true;
+      await new Promise(r => setTimeout(r, 1500));
+    }
+    document.getElementById("gate").style.display = "none";
+    requestAnimationFrame(frame);
+  };
+})();
+</script>
+</body>
+</html>
