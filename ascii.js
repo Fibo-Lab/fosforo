@@ -13,6 +13,7 @@
       ramp: " .:-=+*#%@",       // de oscuro a claro
       mirror: false,
       demo: false,
+      source: null,             // {canvas, draw(w, h, t)}: imagen alternativa a la cámara
       fg: "#39ff6a",
       bg: "#000",
       // overlay(grid, t) -> [{r, c, ch, color}]: caracteres que tapan la cámara
@@ -65,7 +66,11 @@
       const rows = Math.max(8, Math.floor(canvas.height / ch));
       if (small.width !== cols || small.height !== rows) { small.width = cols; small.height = rows; }
 
-      if (cam.demo || !drawCover(cols, rows)) drawDemo(t, cols, rows);
+      if (cam.source) {
+        // otra fuente de imagen (el pasillo virtual): se dibuja a doble resolución y se reduce
+        cam.source.draw(cols * 2, rows * 2, t);
+        sctx.drawImage(cam.source.canvas, 0, 0, cols, rows);
+      } else if (cam.demo || !drawCover(cols, rows)) drawDemo(t, cols, rows);
       const px = sctx.getImageData(0, 0, cols, rows).data;
 
       // Niveles automáticos: estira el contraste entre los percentiles 2 y 98

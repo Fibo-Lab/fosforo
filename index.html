@@ -53,6 +53,13 @@
 
   /* 1. Hallazgo */
   #s-found { justify-content: center; gap: 28px; background: var(--bg); }
+
+  /* 0. Aviso previo: la cámara, explicada fuera de la ficción y sin letra pequeña */
+  #s-warn { justify-content: center; gap: 18px; background: var(--bg); }
+  #s-warn h1 { font-family: var(--display); font-weight: 400; font-size: 34px; color: var(--fg); line-height: 1; }
+  #s-warn p { font-size: 14px; line-height: 1.6; max-width: 34ch; }
+  #s-warn ul { font-size: 14px; line-height: 1.6; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; }
+  #s-warn b { color: var(--fg); font-weight: 600; }
   #found-text { font-size: 17px; line-height: 1.7; min-height: 11em; white-space: pre-line; }
   #found-text .cursor { display: inline-block; width: .6em; background: var(--ink); animation: blink 1.2s steps(1) infinite; }
   @keyframes blink { 50% { opacity: 0 } }
@@ -152,6 +159,8 @@
     padding: calc(10px + env(safe-area-inset-top, 0px)) 14px 10px; background: linear-gradient(#000c, transparent);
     font-size: 12px; color: var(--fg); }
   .cam-top .btn { padding: 8px 10px; font-size: 12px; min-height: 36px; background: #000a; }
+  #cam-out { position: absolute; left: 14px; right: 14px; top: calc(64px + env(safe-area-inset-top, 0px)); background: #000d;
+    border: 1px solid var(--amber); color: var(--amber); padding: 10px 12px; font-size: 13px; text-align: center; }
   .cam-msg { position: absolute; left: 14px; right: 14px; bottom: calc(16px + env(safe-area-inset-bottom, 0px));
     background: #000d; border: 1px solid var(--fg-dim); padding: 14px; display: flex; flex-direction: column; gap: 12px; }
   .cam-msg p { font-size: 14px; line-height: 1.5; min-height: 1.5em; }
@@ -181,8 +190,21 @@
 <body>
 <div id="phone">
 
+  <!-- 0. Aviso de la cámara -->
+  <section class="scene" id="s-warn">
+    <h1>Antes de empezar</h1>
+    <p>Narthex usa la <b>cámara</b> de tu móvil para la realidad aumentada.</p>
+    <ul>
+      <li>La imagen solo se usa como <b>fondo</b>, dibujada en letras.</li>
+      <li><b>No se graba, no se guarda y no sale de tu teléfono.</b></li>
+      <li>También usa los sensores de movimiento para contar pasos.</li>
+    </ul>
+    <p>Si prefieres no usar la cámara, puedes jugar en un <b>pasillo virtual</b>: miras girando el móvil y avanzas caminando.</p>
+    <button class="btn" id="warn-ok">entendido</button>
+  </section>
+
   <!-- 1. Hallazgo -->
-  <section class="scene" id="s-found">
+  <section class="scene" id="s-found" hidden>
     <div id="found-text"></div>
     <button class="btn" id="btn-pick" hidden>recoger el teléfono</button>
   </section>
@@ -265,7 +287,7 @@
       <p class="small">Los dos botones son del mismo tamaño. Disfrútalo: fuera de aquí no será así.</p>
     </div>
     <p id="perm-status" class="small"></p>
-    <button class="btn" id="perm-demo" hidden>seguir con una simulación</button>
+    <button class="btn" id="perm-demo" hidden>jugar sin cámara: pasillo virtual</button>
     <div class="spacer"></div>
   </section>
 
@@ -274,7 +296,8 @@
     <video id="cam-video" playsinline muted></video>
     <canvas id="cam-canvas"></canvas>
     <div id="scan"></div>
-    <div class="cam-top"><span>NarthexOS // code_cam</span><button class="btn" id="cam-toggle">cámara normal</button></div>
+    <div class="cam-top"><span>NarthexOS // code_cam</span><button class="btn" id="cam-toggle">cámara normal</button><button class="btn" id="cam-reset" hidden>enderezar</button></div>
+    <div id="cam-out" hidden>Te sales del pasillo. Gira hacia el centro o pulsa «enderezar».</div>
     <div class="cam-msg">
       <p id="cam-text"></p>
       <div id="signal" hidden></div>
@@ -296,6 +319,7 @@
 </div>
 
 <script src="ascii.js"></script>
+<script src="corridor.js"></script>
 <script src="narthex.js"></script>
 <script>
 (() => {
@@ -337,6 +361,7 @@
     $("#btn-pick").hidden = false;
   }
   $("#btn-pick").onclick = sceneHome;
+  $("#warn-ok").onclick = sceneFound;
 
   // ---------- 2. Pantalla rota ----------
   // El móvil (versión, daños, sonido, avisos) lo lleva narthex.js; el escritorio es la escena s-home
@@ -570,16 +595,17 @@
     $("#perm-mem-msg").hidden = false;
   };
   $("#perm-no").onclick = () => {
-    $("#perm-status").textContent = "Sin cámara no hay code_cam. Puedes cambiar de opinión, o seguir con una simulación.";
+    $("#perm-status").textContent = "Sin cámara, la code_cam no ve tu casa. Puedes cambiar de opinión o jugar en un pasillo virtual.";
     $("#perm-demo").hidden = false;
   };
-  $("#perm-demo").onclick = () => startCam(false);
+  // iOS pide permiso para los sensores y tiene que ser dentro del mismo toque
+  function askSensors() {
+    const ask = (E) => (typeof E !== "undefined" && E.requestPermission) ? E.requestPermission().catch(() => "denied") : null;
+    return Promise.all([ask(window.DeviceMotionEvent), ask(window.DeviceOrientationEvent)]).then(r => r[0]);
+  }
+  $("#perm-demo").onclick = () => startCam(false, askSensors());
   $("#perm-yes").onclick = () => {
-    // iOS pide permiso para el acelerómetro y tiene que ser dentro de este toque
-    let motion = null;
-    if (typeof DeviceMotionEvent !== "undefined" && DeviceMotionEvent.requestPermission) {
-      motion = DeviceMotionEvent.requestPermission().catch(() => "denied");
-    }
+    const motion = askSensors();
     $("#perm-status").textContent = "Ahora tu teléfono te pregunta lo mismo, pero en serio.";
     startCam(true, motion);
   };
@@ -590,6 +616,7 @@
   let camPhase = "intro";   // intro | arrow | body | import | free
   let steps = 0;
   let notebookAt = null;    // posición del cuaderno en px CSS dentro del canvas
+  let corridor = null;      // pasillo virtual si se juega sin cámara
 
   async function startCam(real, motionP) {
     if (real) {
@@ -601,13 +628,17 @@
         const s = stream.getVideoTracks()[0].getSettings();
         cam.mirror = s.facingMode ? s.facingMode === "user" : true;
       } catch (e) {
-        $("#perm-status").textContent = "El teléfono ha dicho que no (o no hay cámara). Sigue con una simulación.";
+        $("#perm-status").textContent = "El teléfono ha dicho que no (o no hay cámara). Puedes jugar en un pasillo virtual.";
         $("#perm-demo").hidden = false;
         return;
       }
       if ((await motionP) !== "denied") listenSteps();
     } else {
-      cam.demo = true;
+      corridor = Corridor();
+      cam.source = corridor;
+      $("#cam-toggle").hidden = true;
+      $("#cam-reset").hidden = false;
+      if ((await motionP) !== "denied") listenSteps();
     }
     show("s-cam");
     requestAnimationFrame(loop);
@@ -618,6 +649,17 @@
     if ($("#s-cam").hidden) return;
     requestAnimationFrame(loop);
     if (!$("#s-cam").classList.contains("normal")) cam.render(t);
+    if (corridor) {
+      const out = corridor.outside();
+      if (out !== !$("#cam-out").hidden) $("#cam-out").hidden = !out;
+    }
+  }
+
+  // Un paso, venga del acelerómetro o del botón
+  function takeStep() {
+    if (camPhase !== "arrow") return;
+    if (corridor && !corridor.step()) return;
+    steps++; updateSignal();
   }
 
   // Cuenta pasos con el acelerómetro: picos de aceleración separados al menos 350 ms
@@ -630,7 +672,7 @@
       avg = avg * 0.95 + m * 0.05;
       const now = performance.now();
       if (camPhase === "arrow" && m - avg > 2.2 && now - lastStep > 350) {
-        lastStep = now; steps++; updateSignal();
+        lastStep = now; takeStep();
       }
     });
   }
@@ -654,10 +696,18 @@
   async function runCam() {
     camPhase = "intro";
     cam.overlay = null;
-    await step("Esto es tu casa. Así la ve el código.");
+    if (corridor) {
+      await step("Sin cámara, NarthexOS te deja en un pasillo de pruebas. Gira el móvil para mirar. Si se tuerce, pulsa «enderezar».");
+    } else {
+      await step("Esto es tu casa. Así la ve el código.");
+    }
     camPhase = "arrow";
     cam.overlay = arrowOverlay;
     $("#signal").hidden = false; updateSignal();
+    if (corridor) {
+      setMsg("Camina para avanzar por el pasillo, o pulsa el botón. Mira por dónde pisas.", ["dar un paso", takeStep]);
+      return;
+    }
     setMsg("Sigue la señal: dos o tres pasos hacia delante. Mira por dónde pisas, no la pantalla.");
     await sleep(cam.demo ? 2500 : 8000);
     if (camPhase === "arrow") setMsg($("#cam-text").textContent, ["ya he avanzado", toBody]);
@@ -694,6 +744,17 @@
     requestAnimationFrame(loop);
     setMsg("La silueta sigue ahí. Prometeo no.", ["volver al inicio", sceneHome]);
   }
+
+  $("#cam-reset").onclick = () => corridor && corridor.reset();
+  // En el ordenador: arrastrar para mirar por el pasillo
+  let lookX = null;
+  $("#cam-canvas").addEventListener("pointerdown", (e) => { lookX = e.clientX; });
+  addEventListener("pointerup", () => { lookX = null; });
+  $("#cam-canvas").addEventListener("pointermove", (e) => {
+    if (!corridor || lookX == null) return;
+    corridor.look((lookX - e.clientX) * 0.25);
+    lookX = e.clientX;
+  });
 
   $("#cam-toggle").onclick = (e) => {
     const s = $("#s-cam");
@@ -1115,11 +1176,11 @@ Hefesto Industries. Lo fabricamos todo; nadie nos da las gracias.</p>
 
   // Atajo para probar: index.html#cam salta a la code_cam en simulación, #toe a la huella, etc.
   const jump = { "#home": sceneHome, "#nick": sceneNick, "#toe": () => { state.nick = "test"; sceneToe(); },
-    "#perm": scenePerm, "#cam": () => { state.nick = "test"; startCam(false); }, "#notes": () => { state.nick = "test"; state.notebook = true; sceneNotes(); },
+    "#perm": scenePerm, "#cam": () => { state.nick = "test"; startCam(false); }, "#found": sceneFound, "#notes": () => { state.nick = "test"; state.notebook = true; sceneNotes(); },
     "#mision": () => { state.nick = "test"; state.notebook = true; homeClean = true; sceneHome(); },
     "#hades": () => { Object.assign(state, { nick: "test", notebook: true, mail: true, tcDone: true, jobDone: true, obolos: 40 });
       homeClean = true; sceneHome(); } }[location.hash];
-  (jump || sceneFound)();
+  (jump || (() => show("s-warn")))();
 })();
 </script>
 </body>
