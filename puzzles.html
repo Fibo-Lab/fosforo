@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Narthex · puzzles</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=VT323&display=swap">
+<style>
+  /* Banco de pruebas de puzzles: la intro real en un marco de móvil y, al lado, saltos y diagnóstico en vivo. */
+  :root {
+    color-scheme: dark;
+    --bg: #050806;
+    --panel: #0c120e;
+    --line: #1d2a21;
+    --fg: #39ff6a;
+    --fg-dim: #1f7a3c;
+    --ink: #d6ffe0;
+    --amber: #ffb347;
+    --display: "VT323", "DejaVu Sans Mono", Menlo, monospace;
+    --body: "IBM Plex Mono", "DejaVu Sans Mono", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; background: var(--bg); color: var(--ink); font-family: var(--body); }
+  body { display: flex; gap: 28px; align-items: center; justify-content: center; overflow: hidden; }
+  [hidden] { display: none !important; }
+  button { font: inherit; cursor: pointer; }
+  #game { border: 0; width: 100%; height: 100%; background: #000; flex: none; }
+  @media (min-width: 900px) and (min-height: 700px) {
+    #game { width: 390px; height: min(820px, 94vh); border-radius: 38px;
+      box-shadow: 0 0 0 10px #111, 0 0 0 11px #2a2a2a, 0 30px 80px rgba(0,0,0,.6); }
+  }
+  #panel { width: 400px; max-height: 94vh; overflow-y: auto; background: var(--panel); border: 1px solid var(--line);
+    padding: 18px; display: flex; flex-direction: column; gap: 18px; }
+  #panel h1 { font-family: var(--display); font-weight: 400; font-size: 32px; color: var(--fg); line-height: 1; }
+  #panel h2 { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--amber); margin-bottom: 8px; }
+  .btns { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
+  .btn { color: var(--fg); background: transparent; border: 1px solid var(--fg-dim); padding: 10px 6px; min-height: 42px; font-size: 13px; text-align: left; }
+  .btn small { display: block; font-size: 10px; opacity: .65; margin-top: 2px; }
+  .btn:active, .btn.on { background: var(--fg-dim); color: var(--ink); }
+  .btn:focus-visible, select:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+  .ctl { display: grid; grid-template-columns: 90px 1fr; gap: 8px; align-items: center; font-size: 13px; margin-bottom: 6px; }
+  select { font: inherit; background: #000; color: var(--fg); border: 1px solid var(--fg-dim); padding: 6px; }
+  pre { font-size: 12px; line-height: 1.5; white-space: pre-wrap; word-break: break-word; background: #000; border: 1px solid var(--line);
+    padding: 10px; min-height: 6em; }
+  .ok { color: var(--fg); } .bad { color: #ff5a5a; }
+  .note { font-size: 11px; line-height: 1.5; opacity: .6; }
+  #toggle { display: none; }
+  @media (max-width: 899px), (max-height: 699px) {
+    body { display: block; }
+    #panel { position: fixed; left: 0; right: 0; bottom: 0; width: auto; max-height: 62vh; z-index: 40;
+      border-width: 1px 0 0; padding: 16px max(16px, env(safe-area-inset-right, 0px)) calc(16px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+      transform: translateY(105%); transition: transform .3s ease; }
+    #panel.open { transform: none; }
+    #toggle { display: block; position: fixed; z-index: 41; right: max(14px, env(safe-area-inset-right, 0px)); top: calc(50px + env(safe-area-inset-top, 0px));
+      background: #000c; color: var(--fg); border: 1px solid var(--fg); padding: 10px 14px; font-size: 13px; }
+  }
+</style>
+</head>
+<body>
+
+<iframe id="game" src="index.html?debug#mision" title="Narthex"></iframe>
+<button id="toggle">puzzles</button>
+
+<aside id="panel">
+  <h1>Puzzles</h1>
+
+  <section>
+    <h2>Saltar a</h2>
+    <div class="btns" id="jumps">
+      <button class="btn" data-go="terminos">Términos<small>contraseña en la letra pequeña</small></button>
+      <button class="btn" data-go="login">Login del correo<small>contraseña: ferula</small></button>
+      <button class="btn" data-go="bandeja">Bandeja<small>spam con botón trampa</small></button>
+      <button class="btn" data-go="cesar">Cifrado César<small>encargo de Hefesto</small></button>
+      <button class="btn" data-go="hades">Mercado de Hades<small>con 40 óbolos</small></button>
+      <button class="btn" data-go="puertas">Puertas lógicas<small>instalar la batería</small></button>
+      <button class="btn" data-go="inicio">Escritorio<small>según el estado</small></button>
+      <button class="btn" data-go="fin">Fin de la demo<small>resumen</small></button>
+    </div>
+  </section>
+
+  <section>
+    <h2>Estado</h2>
+    <div class="ctl"><label for="s-screen">Pantalla</label><select id="s-screen"></select></div>
+    <div class="ctl"><label for="s-batt">Batería</label><select id="s-batt"></select></div>
+    <div class="ctl"><label for="s-spk">Altavoz</label><select id="s-spk"></select></div>
+    <div class="btns">
+      <button class="btn" id="b-money">+40 óbolos</button>
+      <button class="btn" id="b-rastro">Rastro a 0</button>
+      <button class="btn" id="b-mute">silenciar</button>
+      <button class="btn" id="b-reload">recargar</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>Diagnóstico del puzzle</h2>
+    <pre id="diag">Abre un puzzle.</pre>
+  </section>
+
+  <section>
+    <h2>Partida</h2>
+    <pre id="state"></pre>
+  </section>
+
+  <p class="note">El móvil de la izquierda es la intro de verdad en modo depuración. Los saltos preparan el estado que necesita cada puzzle.</p>
+</aside>
+
+<script>
+(() => {
+  const $ = (s) => document.querySelector(s);
+  const game = $("#game");
+  const nx = () => game.contentWindow && game.contentWindow.__nx;
+  let current = null;
+
+  // Lo que cada puzzle necesita tener hecho antes
+  const NEEDS = {
+    login: { notebook: true, tcDone: true },
+    bandeja: { notebook: true, tcDone: true, mail: true },
+    cesar: { notebook: true, tcDone: true, mail: true },
+    hades: { notebook: true, tcDone: true, mail: true, jobDone: true },
+    puertas: { notebook: true, tcDone: true, mail: true, jobDone: true },
+    inicio: { notebook: true },
+    fin: { notebook: true, tcDone: true, mail: true, jobDone: true },
+    terminos: { notebook: true, tcDone: false },
+  };
+  const DIAG_KEY = { terminos: "terminos", cesar: "cesar", puertas: "puertas" };
+
+  document.querySelectorAll("[data-go]").forEach(b => {
+    b.onclick = () => {
+      const n = nx();
+      if (!n) return;
+      const go = b.dataset.go;
+      Object.assign(n.state, { nick: n.state.nick || "test" }, NEEDS[go]);
+      if ((go === "hades" || go === "puertas") && n.state.obolos < 15) n.state.obolos = 40;
+      n.go[go]();
+      current = go;
+      document.querySelectorAll("#jumps .btn").forEach(x => x.classList.toggle("on", x === b));
+      $("#panel").classList.remove("open");
+    };
+  });
+
+  const TIERS = ["0 · roto", "1 · compatible", "2 · refurbished", "3 · original", "4 · mejorado"];
+  for (const k of ["screen", "batt", "spk"]) {
+    const sel = $("#s-" + k);
+    sel.innerHTML = TIERS.map((t, i) => `<option value="${i}">${t}</option>`).join("");
+    sel.onchange = () => nx() && nx().phone.setTier(k, +sel.value);
+  }
+  $("#b-money").onclick = () => { if (nx()) nx().state.obolos += 40; };
+  $("#b-rastro").onclick = () => { if (nx()) nx().state.rastro = 0; };
+  let muted = false;
+  $("#b-mute").onclick = () => {
+    muted = !muted;
+    if (nx()) nx().phone.setMute(muted);
+    $("#b-mute").textContent = muted ? "con sonido" : "silenciar";
+  };
+  $("#b-reload").onclick = () => { game.src = "index.html?debug&r=" + Date.now() + "#mision"; current = null; };
+  $("#toggle").onclick = () => $("#panel").classList.toggle("open");
+
+  const fmt = (o) => Object.entries(o).map(([k, v]) => `${k}: ${typeof v === "boolean" ? (v ? "sí" : "no") : v}`).join("\n");
+
+  // Diagnóstico en vivo
+  setInterval(() => {
+    const n = nx();
+    if (!n) return;
+    const key = DIAG_KEY[current];
+    const d = key && n.diag[key];
+    const pre = $("#diag");
+    pre.textContent = d ? fmt(d) : current ? "Este paso no tiene diagnóstico propio." : "Abre un puzzle.";
+    pre.className = d && ("resuelto" in d ? (d.resuelto ? "ok" : "") : "CARGA" in d ? (d.CORTO ? "bad" : d.CARGA ? "ok" : "") : "");
+    const s = n.state;
+    $("#state").textContent = fmt({
+      nick: s.nick, óbolos: s.obolos, rastro: s.rastro, "correo abierto": s.mail, "términos aceptados": s.tcDone,
+      "encargo hecho": s.jobDone, "Hades visto": s.hadesSeen, "correos leídos": [...s.readMail].join(", ") || "—",
+      pantalla: TIERS[n.phone.tier.screen], batería: TIERS[n.phone.tier.batt], altavoz: TIERS[n.phone.tier.spk], "demo terminada": s.over,
+    });
+    for (const k of ["screen", "batt", "spk"]) if (document.activeElement !== $("#s-" + k)) $("#s-" + k).value = n.phone.tier[k];
+  }, 400);
+})();
+</script>
+</body>
+</html>

@@ -14,9 +14,12 @@ https://mengerspong3.github.io/fosforo/
 | --- | --- |
 | [Intro](https://mengerspong3.github.io/fosforo/) | La intro jugable: pantalla rota, nickname, huella del pie, code_cam, silueta y libreta |
 | [Laboratorio](https://mengerspong3.github.io/fosforo/lab.html) | Banco de pruebas de efectos: niveles de reparación, sonidos y versiones de NarthexOS |
+| [Puzzles](https://mengerspong3.github.io/fosforo/puzzles.html) | Banco de pruebas de los puzzles de la mini misión, con saltos y diagnóstico en vivo |
 | [code_cam](https://mengerspong3.github.io/fosforo/codecam.html) | El filtro ASCII de la cámara, suelto |
 
-Atajos de la intro para probar una escena concreta: `#home`, `#nick`, `#toe`, `#perm`, `#cam`, `#notes`.
+Atajos de la intro para probar una escena concreta: `#home`, `#nick`, `#toe`, `#perm`, `#cam`, `#notes`, `#mision` (escritorio con el Correo listo), `#hades` (con 40 óbolos).
+
+El motor del móvil (versiones de NarthexOS, daños, sonido) está en `narthex.js` y `narthex.css`, compartido por la intro y el laboratorio.
 
 ## En local
 

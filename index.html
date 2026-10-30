@@ -6,7 +6,8 @@
 <title>Narthex · intro</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=VT323&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600&family=Pixelify+Sans:wght@400;600&family=Press+Start+2P&family=VT323&display=swap">
+<link rel="stylesheet" href="narthex.css">
 <style>
   /* Una pantalla de móvil a sangre; en escritorio, un móvil centrado. Un solo look oscuro a propósito. */
   :root {
@@ -56,38 +57,53 @@
   #found-text .cursor { display: inline-block; width: .6em; background: var(--ink); animation: blink 1.2s steps(1) infinite; }
   @keyframes blink { 50% { opacity: 0 } }
 
-  /* 2. Pantalla rota */
-  #s-home { padding: 0; background:
-      radial-gradient(120% 70% at 30% 10%, #1b2a3a 0%, #0c1218 55%, #07090b 100%); }
+  /* 2. Pantalla rota: el escritorio lo pinta narthex.js (versión v0.3) */
+  #s-home { padding: 0; }
   #s-home.zoom { animation: zoomin .9s cubic-bezier(.2,.7,.2,1) both; }
   @keyframes zoomin { from { transform: scale(.45); opacity: 0; filter: blur(4px) } to { transform: none; opacity: 1; filter: none } }
-  .status { display: flex; justify-content: space-between; font-size: 12px; opacity: .8;
-    padding: calc(14px + env(safe-area-inset-top, 0px)) 22px 0; }
-  .status .batt { color: var(--red); }
-  #icons { display: grid; grid-template-columns: repeat(3, 1fr); gap: 26px 12px; padding: 48px 26px 0; }
-  .icon { display: flex; flex-direction: column; align-items: center; gap: 8px; background: none; border: 0;
-    color: var(--ink); font-size: 11px; }
-  .icon .tile { position: relative; width: 62px; height: 62px; border-radius: 16px; display: grid; place-items: center;
-    background: #26303a; color: #8996a3; font-family: var(--body); font-size: 20px; font-weight: 600;
-    filter: grayscale(1); }
-  .icon .tile::after { content: "!"; position: absolute; top: -5px; right: -5px; width: 18px; height: 18px;
-    border-radius: 50%; background: var(--red); color: #fff; font-size: 12px; display: grid; place-items: center; }
-  .icon.live .tile { background: #031a0b; color: var(--fg); filter: none; box-shadow: 0 0 0 1px var(--fg-dim);
-    animation: pulse 2.4s ease-in-out infinite; }
-  .icon.live .tile::after { display: none; }
-  .icon.live span { color: var(--fg); }
-  @keyframes pulse { 0%, 100% { box-shadow: 0 0 0 1px var(--fg-dim), 0 0 0 0 rgba(57,255,106,.0) }
-                     50% { box-shadow: 0 0 0 1px var(--fg), 0 0 22px 6px rgba(57,255,106,.35) } }
-  #cracks, #smudge { position: absolute; inset: 0; width: 100%; height: 100%; }
-  #cracks { pointer-events: none; }
-  #smudge { touch-action: none; }
+  #smudge { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; }
   #smudge.clean { pointer-events: none; }
-  #home-hint { position: absolute; left: 0; right: 0; bottom: calc(36px + env(safe-area-inset-bottom, 0px));
-    text-align: center; font-size: 14px; pointer-events: none; padding: 0 24px; text-shadow: 0 1px 3px #000; }
-  #toast { position: absolute; left: 18px; right: 18px; bottom: calc(90px + env(safe-area-inset-bottom, 0px));
-    background: #000; border: 1px solid var(--red); color: var(--ink); padding: 12px 14px; font-size: 13px;
-    line-height: 1.45; transform: skewX(-3deg); }
-  #toast b { color: var(--red); font-weight: 600; }
+  #home-hint { position: absolute; left: 14px; right: 14px; bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+    text-align: center; font-size: 8px; line-height: 1.8; pointer-events: none; padding: 10px; color: #9bbc0f;
+    background: #0f380f; border: 2px solid #9bbc0f; }
+  #home-hint:empty { display: none; }
+
+  /* Apps de NarthexOS v0.3: ventanas en los cuatro verdes, texto largo en letra legible */
+  #s-app { padding: 0; background: #0f380f; color: #9bbc0f; font-family: var(--body); }
+  .app-title { display: flex; justify-content: space-between; align-items: center; gap: 10px; background: #9bbc0f; color: #0f380f;
+    font: 9px/1.3 "Press Start 2P", monospace; padding: calc(8px + env(safe-area-inset-top, 0px)) 8px 8px 12px; }
+  .app-title button { font: inherit; background: #0f380f; color: #9bbc0f; border: 0; padding: 10px; min-height: 36px; }
+  #app-body { flex: 1; overflow-y: auto; padding: 18px 16px calc(20px + env(safe-area-inset-bottom, 0px));
+    display: flex; flex-direction: column; gap: 14px; font-size: 14px; line-height: 1.55; }
+  #app-body b { color: #c8e06a; font-weight: 600; }
+  #app-body p { white-space: pre-line; }
+  .gb-btn { font: 9px/1.4 "Press Start 2P", monospace; color: #0f380f; background: #9bbc0f; border: 0; box-shadow: 4px 4px 0 #306230;
+    padding: 12px; min-height: 44px; cursor: pointer; }
+  .gb-btn:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 #306230; }
+  .gb-btn.ghost { background: transparent; color: #9bbc0f; border: 2px solid #9bbc0f; box-shadow: none; }
+  .gb-btn.on { background: #c8e06a; }
+  .gb-btn:disabled { opacity: .45; cursor: default; }
+  .gb-btn:focus-visible, .gb:focus-visible, .mail-row:focus-visible { outline: 2px solid #c8e06a; outline-offset: 3px; }
+  .gb-box { border: 2px solid #306230; padding: 12px; }
+  .fine { font-size: 10px; line-height: 1.4; opacity: .75; }
+  .sticky { position: sticky; bottom: 0; }
+  .terms li { margin: 0 0 12px 18px; }
+  input.gb { font: 16px var(--body); background: #0f380f; color: #c8e06a; border: 2px solid #9bbc0f; padding: 10px; width: 100%;
+    -webkit-user-select: text; user-select: text; }
+  .col { display: flex; flex-direction: column; gap: 10px; }
+  .row3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .mail-row { text-align: left; background: none; border: 0; border-bottom: 2px solid #306230; color: #9bbc0f; font: inherit;
+    padding: 12px 2px; display: flex; flex-direction: column; gap: 2px; cursor: pointer; }
+  .mail-row small { font-size: 11px; opacity: .7; }
+  .mail-row.unread span::before { content: "● "; color: #c8e06a; }
+  .cipher { font: 18px/1.6 var(--body); letter-spacing: .12em; color: #c8e06a; word-break: break-word; }
+  .dial { display: grid; grid-template-columns: 64px 1fr 64px; align-items: center; gap: 10px; }
+  #k-val { text-align: center; font: 22px "Press Start 2P", monospace; color: #c8e06a; font-variant-numeric: tabular-nums; }
+  .part { display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; align-items: center; }
+  .part .price { font: 9px "Press Start 2P", monospace; color: #c8e06a; }
+  .part details, .part .gb-btn { grid-column: 1 / -1; }
+  .part summary { font-size: 11px; cursor: pointer; opacity: .8; }
+  #circuit svg { width: 100%; height: auto; display: block; }
 
   /* Pantallas de NarthexOS */
   .os { background: var(--bg); gap: 18px; }
@@ -173,25 +189,14 @@
 
   <!-- 2. Pantalla rota: limpiar las manchas -->
   <section class="scene" id="s-home" hidden>
-    <div class="status"><span>??:??</span><span>sin señal</span><span class="batt">3%</span></div>
-    <div id="icons"></div>
-    <svg id="cracks" viewBox="0 0 100 200" preserveAspectRatio="none" aria-hidden="true">
-      <g fill="none" stroke="rgba(255,255,255,.55)" stroke-width="1.1" vector-effect="non-scaling-stroke">
-        <polyline vector-effect="non-scaling-stroke" points="72,58 60,40 55,22 48,0"/>
-        <polyline vector-effect="non-scaling-stroke" points="72,58 88,44 100,40"/>
-        <polyline vector-effect="non-scaling-stroke" points="72,58 81,80 86,104 100,118"/>
-        <polyline vector-effect="non-scaling-stroke" points="72,58 58,70 40,76 22,92 0,98"/>
-        <polyline vector-effect="non-scaling-stroke" points="72,58 66,92 70,130 62,160 66,200"/>
-        <polyline vector-effect="non-scaling-stroke" points="72,58 92,62 100,70"/>
-        <polyline vector-effect="non-scaling-stroke" points="60,40 46,46 30,40"/>
-        <polyline vector-effect="non-scaling-stroke" points="81,80 70,86 66,92"/>
-        <polyline vector-effect="non-scaling-stroke" points="40,76 44,90 38,108"/>
-        <polygon vector-effect="non-scaling-stroke" points="70,54 75,55 74,61 69,60" fill="rgba(255,255,255,.25)"/>
-      </g>
-    </svg>
     <canvas id="smudge"></canvas>
     <div id="home-hint">Desliza el dedo para limpiar la pantalla</div>
-    <div id="toast" hidden></div>
+  </section>
+
+  <!-- Apps de NarthexOS: Correo, Descifrador, Hades, instalación -->
+  <section class="scene" id="s-app" hidden>
+    <div class="app-title"><span id="app-name"></span><button id="app-back">inicio</button></div>
+    <div id="app-body"></div>
   </section>
 
   <!-- 3. Nickname -->
@@ -291,15 +296,18 @@
 </div>
 
 <script src="ascii.js"></script>
+<script src="narthex.js"></script>
 <script>
 (() => {
   const $ = (s) => document.querySelector(s);
   const sleep = (ms) => new Promise(r => setTimeout(r, ms));
   const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const state = { nick: "", notebook: false };
+  const state = { nick: "", notebook: false, rastro: 0, obolos: 0, mail: false, tcDone: false,
+    readMail: new Set(), jobDone: false, hadesSeen: false, over: false };
 
   function show(id) {
     document.querySelectorAll(".scene").forEach(s => { s.hidden = s.id !== id; });
+    phone.auto = id === "s-home";   // los fallos sueltos, solo en el escritorio
   }
 
   // Escribe texto letra a letra; un toque en la escena lo completa de golpe
@@ -331,55 +339,65 @@
   $("#btn-pick").onclick = sceneHome;
 
   // ---------- 2. Pantalla rota ----------
-  const ICONS = [
-    ["Correo", "@", "ERR 0x00: buzón incinerado. Literalmente."],
-    ["Mapas", "N", "No sabemos dónde estás. Primera vez en la historia."],
-    ["Éter", "~", "Sin señal del Éter. Necesitas un usuario."],
-    ["Archivos", "[]", "Archivos cifrados. Clave: ████████"],
-    ["code_cam", "(o)", null],
-    ["Terminal", ">_", "permission denied (y con razón)"],
-    ["Cartera", "¤", "Saldo: 0. Deuda con Babel Capital: sí."],
-    ["Fotos", "#", "Las fotos se borraron solas. Sabia decisión."],
-    ["Ajustes", "%", "Ajustes no ajustables."],
-    ["Tienda", "$", "La tienda de Olimpo no está disponible en tu realidad."],
-    ["Reloj", "::", "Son las ██:██. Llegas tarde."],
-    ["Libreta", "¶", "Vacía. Alguien se la ha llevado. O la ha escondido."],
-  ];
-  let homeClean = false;
-  let toastTimer = 0;
+  // El móvil (versión, daños, sonido, avisos) lo lleva narthex.js; el escritorio es la escena s-home
+  const phone = Phone($("#phone"), { desk: $("#s-home") });
+  const toast = (html, ms, good) => phone.toast(html, ms, good);
+  document.querySelectorAll(".scene:not(#s-cam)").forEach(s => s.classList.add("ph-filtered"));
 
-  function toast(html) {
-    const t = $("#toast");
-    t.innerHTML = html; t.hidden = false;
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => { t.hidden = true; }, 2800);
+  const APPS = [["Correo", "@"], ["Mapas", "N"], ["Éter", "~"], ["Archivos", "[]"], ["code_cam", "(o)"], ["Terminal", ">_"],
+    ["Cartera", "¤"], ["Fotos", "#"], ["Ajustes", "%"], ["Tienda", "$"], ["Reloj", "::"], ["Libreta", "¶"]];
+  const ERRORS = {
+    Correo: "ERR 0x00: buzón incinerado. Literalmente.",
+    Mapas: "No sabemos dónde estás. Primera vez en la historia.",
+    Éter: "Sin señal del Éter. Necesitas un usuario.",
+    Archivos: "Archivos cifrados. Clave: ████████",
+    Terminal: "permission denied (y con razón)",
+    Cartera: "Saldo: 0. Deuda con Babel Capital: sí.",
+    Fotos: "Las fotos se borraron solas. Sabia decisión.",
+    Ajustes: "Ajustes no ajustables.",
+    Tienda: "La tienda de Olimpo no está disponible en tu realidad.",
+    Reloj: "Son las ██:██. Llegas tarde.",
+    Libreta: "Vacía. Alguien se la ha llevado. O la ha escondido.",
+  };
+  let homeClean = false;
+
+  // Qué hace cada icono según lo que el jugador ha conseguido
+  function appIcon([name, glyph]) {
+    const err = { name, glyph, state: "error", onClick: () => toast(`<b>${name}:</b> ${ERRORS[name]}`) };
+    switch (name) {
+      case "code_cam": return { name, glyph, state: "live", onClick: () => {
+        if (!homeClean) return toast("<b>¿code_cam?</b> Límpiala un poco más, que no se ve nada.");
+        state.nick ? reopenCam() : sceneNick();
+      } };
+      case "Libreta": return state.notebook ? { name, glyph, state: "ok", onClick: sceneNotes } : err;
+      case "Correo": return state.notebook
+        ? { name, glyph, state: state.mail ? "ok" : "live", badge: unreadMail() ? "nuevo" : "", onClick: openMail } : err;
+      case "Cartera": return state.jobDone
+        ? { name, glyph, state: "ok", onClick: () => toast(`<b>Cartera:</b> ${state.obolos} óbolos. Deuda con Babel Capital: sí.`, 3000, true) } : err;
+      case "Tienda": return state.jobDone
+        ? { name: "Hades", glyph: "H", state: state.hadesSeen ? "ok" : "live", badge: state.hadesSeen ? "" : "nuevo", onClick: openHades } : err;
+      default: return err;
+    }
+  }
+
+  function renderStatus() {
+    const r = Math.min(state.rastro, 5);
+    phone.setStatus("RASTRO " + "▮".repeat(r) + "▯".repeat(5 - r));
   }
 
   function sceneHome() {
     show("s-home");
-    const first = !state.nick;
+    const first = !phone.root.classList.contains("ph-on");
     $("#s-home").classList.toggle("zoom", first);
-    const grid = $("#icons");
-    grid.innerHTML = "";
-    for (const [name, glyph, err] of ICONS) {
-      const live = !err || (name === "Libreta" && state.notebook);
-      const b = document.createElement("button");
-      b.className = "icon" + (live ? " live" : "");
-      b.innerHTML = `<div class="tile">${glyph}</div><span>${name}</span>`;
-      b.onclick = () => {
-        if (name === "Libreta" && state.notebook) return sceneNotes();
-        if (name === "code_cam") {
-          if (!homeClean) return toast("<b>¿code_cam?</b> Límpiala un poco más, que no se ve nada.");
-          return state.nick ? reopenCam() : sceneNick();
-        }
-        toast(`<b>${name}:</b> ${err}`);
-      };
-      grid.appendChild(b);
-    }
-    if (state.notebook) {
-      $("#home-hint").textContent = "Nueva app desbloqueada: Libreta. Fin de la intro (prototipo).";
-    }
-    if (first) requestAnimationFrame(initSmudge);
+    phone.on();
+    phone.renderIcons(APPS.map(appIcon));
+    renderStatus();
+    requestAnimationFrame(phone.redrawWall);
+    if (state.over) $("#home-hint").textContent = "Fin de la demo. Quedan 3 niveles de reparación.";
+    else if (state.jobDone && !state.hadesSeen) $("#home-hint").textContent = "Nueva app: Hades.";
+    else if (state.notebook && !state.mail) $("#home-hint").textContent = "Nueva app desbloqueada: Libreta. El Correo despierta.";
+    else if (homeClean) $("#home-hint").textContent = "";
+    if (first && !homeClean) requestAnimationFrame(initSmudge);
     else { homeClean = true; $("#smudge").classList.add("clean"); }
   }
 
@@ -440,6 +458,7 @@
     ctx.clearRect(0, 0, cv.width, cv.height);
     cv.classList.add("clean");
     $("#home-hint").textContent = "Las grietas no se van. Una sola app parece viva.";
+    phone.renderIcons(APPS.map(appIcon));
   }
 
   // ---------- 3. Nickname ----------
@@ -771,7 +790,7 @@
     ["Qué es la code_cam", "Lo que ves por la code_cam es el mundo como lo ven ellos: datos.\n\nTu sofá es un dato. Tu gato es un dato con bigotes.\n\nLos Dioses lo ven así todo el tiempo. Ahora tú también."],
     ["Los cinco Dioses", "Olimpo te mira.\nAsgard te protege de cosas que vende Asgard.\nHeliópolis te da de comer y luego te cura.\nBabel te presta para pagar a los otros cuatro.\nHefesto lo fabrica todo y nadie le da las gracias."],
     ["Reglas para no arder", "1. No aceptes cookies de desconocidos.\n2. Lee la letra pequeña. Ahí esconden lo bueno y lo malo.\n3. Si un botón dice «No, prefiero que me hackeen», es una trampa. Y un insulto."],
-    ["Siguiente paso", "Este teléfono está roto. Yo también, un poco. Lo arreglaremos por partes.\n\nEmpieza por el Correo. La contraseña está donde nadie mira.\n\nPD: si alguien te dice que estoy muerto, pregúntale cómo lo sabe.\n\n(Aquí acaba la intro del prototipo. El capítulo 1 viene después.)"],
+    ["Siguiente paso", "Este teléfono está roto. Yo también, un poco. Lo arreglaremos por partes.\n\nEmpieza por el Correo. La contraseña está donde nadie mira.\n\nPD: si alguien te dice que estoy muerto, pregúntale cómo lo sabe."],
   ];
   const read = new Set();
   let openEntry = -1;
@@ -804,9 +823,302 @@
     if (openEntry >= 0) { openEntry = -1; renderNotes(); } else sceneHome();
   };
 
+  // ---------- 8. Apps de NarthexOS: la mini misión ----------
+  // Diagnóstico para el laboratorio de puzzles (puzzles.html lo lee)
+  const diag = {};
+
+  function openApp(title, html, back = sceneHome) {
+    show("s-app");
+    $("#app-name").textContent = title;
+    $("#app-back").hidden = false;
+    $("#app-back").onclick = back;
+    const body = $("#app-body");
+    body.onscroll = null;
+    body.innerHTML = html;
+    body.scrollTop = 0;
+    return body;
+  }
+
+  function addRastro(n, why) {
+    state.rastro += n;
+    phone.play("error");
+    toast(`<b>Rastro +${n}.</b> ${why}`, 4500);
+    renderStatus();
+  }
+
+  // --- Correo: términos y condiciones, contraseña en la letra pequeña ---
+  const TERMS = [
+    "Al usar NarthexOS Mail aceptas que NarthexOS Mail existe.",
+    "NarthexOS no vende tus datos. No tenemos a quién.",
+    "Este teléfono no es tuyo. Tampoco era de quien te lo vendió, porque nadie te lo vendió.",
+    "Cualquier parecido con un teléfono que funciona es pura coincidencia.",
+    "El usuario se compromete a no lamer la pantalla. Sabemos dónde ha estado.",
+    "NarthexOS puede reiniciarse sin aviso, como cualquiera un lunes.",
+    "Recuperación de cuenta. 7.1. Las contraseñas se guardan cifradas. 7.2. Casi todas. <span class=\"fine\">7.3. Si el usuario anterior ha desaparecido, la contraseña de su correo es «ferula». Nadie lee esto, así que nos da igual.</span>",
+    "Estos términos pueden cambiar mientras los lees.",
+    "Si has llegado hasta aquí, enhorabuena: eres la única persona que lo ha hecho. A Olimpo no le gusta.",
+  ];
+  function openMail() {
+    if (state.mail) return inbox();
+    if (!state.tcDone) return terms();
+    login();
+  }
+  function terms() {
+    const body = openApp("Correo · términos", `
+      <p><b>Términos y condiciones de NarthexOS Mail</b></p>
+      <ol class="terms">${TERMS.map(t => `<li>${t}</li>`).join("")}</ol>
+      <button class="gb-btn sticky" id="tc-ok">ACEPTAR TODO</button>`);
+    let read = false;
+    diag.terminos = { leido: false, contraseña: "ferula", "Rastro si aceptas sin leer": "+1 (solo la primera vez)" };
+    body.onscroll = () => { if (body.scrollTop + body.clientHeight >= body.scrollHeight - 40) read = diag.terminos.leido = true; };
+    $("#tc-ok").onclick = () => {
+      const first = !state.tcDone;
+      state.tcDone = true;
+      if (first && !read) addRastro(1, "Has aceptado sin leer. Olimpo toma nota, con cariño.");
+      login();
+    };
+  }
+  function login() {
+    openApp("Correo", `
+      <p>Cuenta: <b>prometeo@narthex</b></p>
+      <form id="login" class="col" autocomplete="off">
+        <label for="pw">Contraseña</label>
+        <input class="gb" id="pw" type="text" autocapitalize="off" spellcheck="false">
+        <button class="gb-btn" type="submit">entrar</button>
+      </form>
+      <p id="pw-msg" class="fine"></p>
+      <button class="gb-btn ghost" id="pw-terms">volver a leer los términos</button>`);
+    $("#login").onsubmit = (e) => {
+      e.preventDefault();
+      const v = $("#pw").value.trim().toLowerCase();
+      if (v === "ferula" || v === "férula") { phone.play("ok"); state.mail = true; $("#pw").blur(); inbox(); return; }
+      phone.play("error");
+      $("#pw-msg").textContent = "Contraseña incorrecta. Prometeo decía que estaba donde nadie mira.";
+    };
+    $("#pw-terms").onclick = terms;
+  }
+
+  const MAILS = () => [
+    { id: "p", from: "Prometeo (envío programado)", subj: "Si lees esto, has entrado",
+      body: `Bien, ${state.nick}. Has encontrado la contraseña, así que lees la letra pequeña. Sigue así.\n\nEste teléfono necesita piezas y las piezas cuestan óbolos. Hefesto paga por trabajos pequeños: hazlos. Luego baja a Hades a comprar.\n\nNo preguntes de dónde salen las piezas.\n\n— P.` },
+    { id: "job", from: "Hefesto Industries · Encargos", subj: "Trabajo urgente: descifrar un mensaje", job: true },
+    { id: "spam", from: "Olimpo Rewards", subj: "¡¡HAS GANADO UN MÓVIL NUEVO!!", spam: true },
+    ...(state.jobDone ? [{ id: "hades", from: "Hades", subj: "Tenemos piezas",
+      body: "Nos han dicho que tienes óbolos. Tenemos piezas.\n\nNo preguntes de dónde.\n\nLa app de Hades ya está en tu teléfono. Tampoco preguntes cómo." }] : []),
+  ];
+  const unreadMail = () => MAILS().some(m => !state.readMail.has(m.id));
+
+  function inbox() {
+    const rows = MAILS().map(m => `<button class="mail-row ${state.readMail.has(m.id) ? "" : "unread"}" data-mail="${m.id}">
+      <span>${m.subj}</span><small>${m.from}</small></button>`).join("");
+    const body = openApp("Correo · bandeja", `<div class="col" style="gap:0">${rows}</div>`);
+    body.querySelectorAll("[data-mail]").forEach(b => { b.onclick = () => openMailItem(MAILS().find(m => m.id === b.dataset.mail)); });
+  }
+
+  function openMailItem(m) {
+    state.readMail.add(m.id);
+    const head = `<p class="fine">De: ${m.from}</p><p><b>${m.subj}</b></p>`;
+    if (m.spam) {
+      openApp("Correo", `${head}<p>Enhorabuena. Eres el visitante 1.000.000 de esta bandeja de entrada. Pulsa el botón para reclamar tu premio antes de que caduque (caduca ya).</p>
+        <button class="gb-btn" id="spam-yes">RECLAMAR PREMIO</button>
+        <button class="gb-btn ghost" id="spam-no" style="font-size:7px">no, prefiero seguir con mi móvil roto y triste</button>`, inbox);
+      $("#spam-yes").onclick = () => {
+        addRastro(1, "El premio era una cookie. Ahora Olimpo sabe tu talla de zapato.");
+        inbox();
+      };
+      $("#spam-no").onclick = () => { toast("<b>Bien hecho.</b> Los botones que te insultan son trampas.", 3000, true); inbox(); };
+      return;
+    }
+    if (m.job) {
+      openApp("Correo", `${head}<p>Un cliente nos ha enviado un mensaje cifrado y nuestra IA dice que es un poema. Nuestra IA siempre dice que es un poema.
+
+El cliente es muy clásico. Muy, muy clásico. Como un emperador romano.
+
+Pago: 40 óbolos.
+
+Hefesto Industries. Lo fabricamos todo; nadie nos da las gracias.</p>
+        ${state.jobDone ? `<p class="gb-box">Encargo completado. Hefesto ha pagado 40 óbolos.</p>` : `<button class="gb-btn" id="job-go">aceptar encargo</button>`}`, inbox);
+      if (!state.jobDone) $("#job-go").onclick = caesar;
+      return;
+    }
+    openApp("Correo", `${head}<p>${m.body}</p>`, inbox);
+  }
+
+  // --- Encargo: cifrado César ---
+  const PLAIN = "LA CARGA SALE DEL MUELLE TRES A MEDIANOCHE";
+  const shiftText = (t, k) => t.replace(/[A-Z]/g, c => String.fromCharCode((c.charCodeAt(0) - 65 + k + 26 * 3) % 26 + 65));
+  const CIPHER = shiftText(PLAIN, 3);
+
+  function caesar() {
+    let k = 0;
+    openApp("Descifrador", `
+      <p>Mensaje del cliente:</p>
+      <div class="cipher gb-box">${CIPHER}</div>
+      <p>Gira la rueda: cada letra retrocede ese número de puestos en el alfabeto.</p>
+      <div class="dial"><button class="gb-btn" id="k-dn" aria-label="menos">&lt;</button><div id="k-val">0</div><button class="gb-btn" id="k-up" aria-label="más">&gt;</button></div>
+      <div class="cipher gb-box" id="k-out"></div>
+      <button class="gb-btn" id="k-send">enviar a Hefesto</button>`, () => openMailItem(MAILS().find(m => m.job)));
+    const render = () => {
+      $("#k-val").textContent = k; $("#k-out").textContent = shiftText(CIPHER, -k);
+      diag.cesar = { rueda: k, solución: 3, resuelto: shiftText(CIPHER, -k) === PLAIN, texto: shiftText(CIPHER, -k) };
+    };
+    $("#k-dn").onclick = () => { k = (k + 25) % 26; render(); };
+    $("#k-up").onclick = () => { k = (k + 1) % 26; render(); };
+    $("#k-send").onclick = () => {
+      if (shiftText(CIPHER, -k) !== PLAIN) {
+        phone.play("error");
+        toast("<b>Hefesto:</b> Eso no es un poema. Ni nada. Prueba otra vez.");
+        return;
+      }
+      state.jobDone = true;
+      state.obolos += 40;
+      phone.play("aplauso");
+      toast("<b>+40 óbolos.</b> Hefesto te da las gracias. Es la primera vez que se las da a alguien.", 4500, true);
+      openApp("Descifrador", `<p>Mensaje descifrado:</p><div class="cipher gb-box">${PLAIN}</div>
+        <p>Hefesto ha pagado <b>40 óbolos</b>. A quién le llega la carga a medianoche no es asunto tuyo. Todavía.</p>
+        <p>Tienes correo nuevo.</p><button class="gb-btn" id="k-done">volver al correo</button>`, inbox);
+      $("#k-done").onclick = inbox;
+    };
+    render();
+  }
+
+  // --- Hades: el mercado negro de piezas ---
+  const PARTS = [
+    { id: "batt1", part: "batt", tier: 1, price: 15, name: "Batería «compatible» para Dédalo (casi)", fine: "Garantía: 3 días o 3 cargas, lo que ocurra primero." },
+    { id: "batt2", part: "batt", tier: 2, price: 28, name: "Batería refurbished", fine: "Como nueva, según el vendedor. El vendedor es Hades." },
+    { id: "screen1", part: "screen", tier: 1, price: 18, name: "Pantalla «compatible»", fine: "Los colores pueden variar. Bastante." },
+    { id: "screen2", part: "screen", tier: 2, price: 32, name: "Pantalla refurbished", fine: "Ligero tono amarillento. Lo llamamos «vintage»." },
+    { id: "spk1", part: "spk", tier: 1, price: 6, name: "Altavoz «compatible» SUPEROFERTA", fine: "Incluye servicio gratuito de telemetría para Olimpo, por tu comodidad.", rotten: true },
+    { id: "spk2", part: "spk", tier: 2, price: 22, name: "Altavoz refurbished", fine: "Suena. Más o menos." },
+  ];
+  function openHades() {
+    state.hadesSeen = true;
+    const rows = PARTS.map(p => {
+      const done = phone.tier[p.part] >= p.tier;
+      return `<div class="gb-box part"><b>${p.name}</b><span class="price">${p.price} ó</span>
+        <details><summary>letra pequeña</summary><p class="fine">${p.fine}</p></details>
+        <button class="gb-btn${done ? " ghost" : ""}" data-buy="${p.id}" ${done ? "disabled" : ""}>${done ? "instalada" : "comprar e instalar"}</button></div>`;
+    }).join("");
+    const body = openApp("Hades · mercado", `<p>Tienes <b>${state.obolos} óbolos</b>.</p>
+      <p class="fine">Piezas de segunda, tercera y cuarta mano. Sin devoluciones. Sin preguntas. Sin factura.</p>${rows}`);
+    body.querySelectorAll("[data-buy]").forEach(b => { b.onclick = () => buy(PARTS.find(p => p.id === b.dataset.buy)); });
+  }
+  function buy(p) {
+    if (state.obolos < p.price) {
+      phone.play("error");
+      toast(`<b>Hades:</b> No te llega. Vuelve con ${p.price - state.obolos} óbolos más.`);
+      return;
+    }
+    state.obolos -= p.price;
+    phone.play("ok");
+    if (p.part === "batt") logicPuzzle(p); else calibrate(p);
+  }
+  async function calibrate(p) {
+    openApp("Instalación", `<p>Instalando: <b>${p.name}</b></p><div class="gb-box cipher" id="cal"></div>`);
+    $("#app-back").hidden = true;
+    for (let i = 0; i <= 10; i++) {
+      $("#cal").textContent = `calibrando\n${"▮".repeat(i)}${"▯".repeat(10 - i)} ${i * 10}%`;
+      await sleep(220);
+    }
+    finishInstall(p);
+  }
+  function finishInstall(p) {
+    phone.setTier(p.part, p.tier);
+    phone.play("ok");
+    const msg = { screen: "Adiós, grietas. Los colores ya se arreglarán. O no.", spk: "Se acabaron los pitidos. Casi.",
+      batt: "Ya no miente tanto." }[p.part];
+    toast(`<b>Instalada.</b> ${msg}`, 4000, true);
+    if (p.rotten) setTimeout(() => addRastro(2, "El altavoz trae un rastreador de Olimpo. Estaba en la letra pequeña."), 4200);
+    const all = ["screen", "batt", "spk"].every(k => phone.tier[k] > 0);
+    const canBuy = PARTS.some(q => phone.tier[q.part] < q.tier && q.price <= state.obolos);
+    if (all || !canBuy) setTimeout(endDemo, p.rotten ? 5200 : 1200);
+    else openHades();
+  }
+
+  // --- Instalar la batería: puertas lógicas ---
+  function logicPuzzle(p) {
+    const sw = { A: false, B: false, C: true };
+    openApp("Instalación · batería", `
+      <p>Conecta la batería: la <b>CARGA</b> tiene que encenderse sin que salte el <b>CORTO</b>.</p>
+      <div id="circuit" class="gb-box"></div>
+      <div class="row3">${["A", "B", "C"].map(k => `<button class="gb-btn ghost" data-sw="${k}">${k}</button>`).join("")}</div>
+      <button class="gb-btn" id="lg-go">cerrar el circuito</button>`);
+    $("#app-back").hidden = true;
+    const values = () => {
+      const v = { ...sw };
+      v.or = v.A || v.B; v.not = !v.C; v.and = v.or && v.not; v.short = v.A && v.B;
+      return v;
+    };
+    const render = () => {
+      const v = values();
+      const c = (x) => x ? "#c8e06a" : "#306230";
+      const wire = (pts, on) => `<polyline points="${pts}" fill="none" stroke="${c(on)}" stroke-width="${on ? 4 : 3}"/>`;
+      const gate = (x, y, w, h, label) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#0f380f" stroke="#9bbc0f" stroke-width="2"/>
+        <text x="${x + w / 2}" y="${y + h / 2 + 4}" text-anchor="middle" font-family="'Press Start 2P', monospace" font-size="9" fill="#9bbc0f">${label}</text>`;
+      const node = (x, y, k) => `<rect x="${x - 13}" y="${y - 13}" width="26" height="26" fill="${sw[k] ? "#c8e06a" : "#0f380f"}" stroke="#9bbc0f" stroke-width="2"/>
+        <text x="${x}" y="${y + 5}" text-anchor="middle" font-family="'Press Start 2P', monospace" font-size="10" fill="${sw[k] ? "#0f380f" : "#9bbc0f"}">${k}</text>`;
+      const lamp = (x, y, on, label) => `<circle cx="${x}" cy="${y}" r="10" fill="${on ? "#c8e06a" : "#0f380f"}" stroke="#9bbc0f" stroke-width="2"/>
+        <text x="${x}" y="${y + 26}" text-anchor="middle" font-family="'Press Start 2P', monospace" font-size="7" fill="#9bbc0f">${label}</text>`;
+      $("#circuit").innerHTML = `<svg viewBox="0 0 300 220" role="img" aria-label="circuito de la batería">
+        ${wire("25,50 80,50 80,15 110,15", v.A)}${wire("80,50 80,75 110,75", v.A)}
+        ${wire("25,110 95,110 95,35 110,35", v.B)}${wire("95,95 110,95", v.B)}
+        ${wire("25,185 110,185", v.C)}
+        ${wire("150,25 185,25", v.short)}
+        ${wire("150,85 175,85 175,130 200,130", v.or)}
+        ${wire("150,185 175,185 175,150 200,150", v.not)}
+        ${wire("240,140 262,140", v.and)}
+        ${gate(110, 5, 40, 40, "AND")}${gate(110, 65, 40, 40, "OR")}${gate(110, 170, 40, 30, "NOT")}${gate(200, 115, 40, 50, "AND")}
+        ${node(25, 50, "A")}${node(25, 110, "B")}${node(25, 185, "C")}
+        ${lamp(195, 25, v.short, "CORTO")}${lamp(274, 140, v.and, "CARGA")}
+      </svg>`;
+      document.querySelectorAll("[data-sw]").forEach(b => b.classList.toggle("on", sw[b.dataset.sw]));
+      diag.puertas = { A: v.A, B: v.B, C: v.C, OR: v.or, NOT: v.not, CARGA: v.and, CORTO: v.short, "fórmulas": "CARGA = (A OR B) AND NOT C · CORTO = A AND B", "soluciones": "A=1 B=0 C=0 · A=0 B=1 C=0" };
+    };
+    document.querySelectorAll("[data-sw]").forEach(b => { b.onclick = () => { sw[b.dataset.sw] = !sw[b.dataset.sw]; render(); }; });
+    $("#lg-go").onclick = () => {
+      const v = values();
+      if (v.short) { phone.play("alarma"); toast("<b>¡Cortocircuito!</b> Ha salido humo. Huele a pelo quemado. Prueba otra combinación."); return; }
+      if (!v.and) { phone.play("error"); toast("<b>Sin carga.</b> La batería no recibe corriente."); return; }
+      finishInstall(p);
+    };
+    render();
+  }
+
+  // --- Fin de la demo ---
+  function endDemo() {
+    state.over = true;
+    const name = (k) => `${Phone.TIERS[phone.tier[k]]}`;
+    openApp("NarthexOS", `<p class="display" style="font-size:34px; color:#c8e06a">Fin de la demo</p>
+      <div class="gb-box col" style="gap:6px">
+        <span>Pantalla: <b>${name("screen")}</b></span>
+        <span>Batería: <b>${name("batt")}</b></span>
+        <span>Altavoz: <b>${name("spk")}</b></span>
+        <span>Rastro: <b>${state.rastro}</b> · Óbolos: <b>${state.obolos}</b></span>
+      </div>
+      <p>El teléfono está mejor. No bien: mejor. Quedan 3 niveles de reparación por pieza, y Hades siempre tiene algo.</p>
+      <p>Capítulo 1: El fuego. Próximamente.</p>
+      <button class="gb-btn" id="end-home">ver cómo ha quedado el móvil</button>
+      <button class="gb-btn ghost" id="end-again">empezar de nuevo</button>`);
+    phone.play("aplauso");
+    $("#end-home").onclick = sceneHome;
+    $("#end-again").onclick = () => location.reload();
+  }
+
+  // Con ?debug, el laboratorio de puzzles puede leer el estado y saltar a cada pantalla
+  if (/[?&]debug/.test(location.search)) {
+    window.__nx = {
+      state, phone, diag,
+      go: { inicio: sceneHome, terminos: terms, login, bandeja: inbox, cesar: caesar, hades: openHades,
+        puertas: () => logicPuzzle(PARTS[0]), fin: endDemo },
+    };
+  }
+
   // Atajo para probar: index.html#cam salta a la code_cam en simulación, #toe a la huella, etc.
   const jump = { "#home": sceneHome, "#nick": sceneNick, "#toe": () => { state.nick = "test"; sceneToe(); },
-    "#perm": scenePerm, "#cam": () => { state.nick = "test"; startCam(false); }, "#notes": () => { state.nick = "test"; state.notebook = true; sceneNotes(); } }[location.hash];
+    "#perm": scenePerm, "#cam": () => { state.nick = "test"; startCam(false); }, "#notes": () => { state.nick = "test"; state.notebook = true; sceneNotes(); },
+    "#mision": () => { state.nick = "test"; state.notebook = true; homeClean = true; sceneHome(); },
+    "#hades": () => { Object.assign(state, { nick: "test", notebook: true, mail: true, tcDone: true, jobDone: true, obolos: 40 });
+      homeClean = true; sceneHome(); } }[location.hash];
   (jump || sceneFound)();
 })();
 </script>
