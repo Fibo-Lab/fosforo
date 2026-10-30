@@ -142,12 +142,20 @@
   #signal { font-family: var(--body); color: var(--fg); letter-spacing: 2px; font-size: 14px; }
 
   /* 7. Libreta */
-  #s-notes { background: #0d0a05; gap: 16px; }
-  #s-notes h1 { font-family: var(--display); font-weight: 400; font-size: 30px; color: var(--amber); }
-  #note { flex: 1; font-family: var(--display); font-size: 25px; line-height: 1.2; color: #ffd9a0; white-space: pre-line;
-    overflow-y: auto; -webkit-user-select: text; user-select: text; }
-  #note-page { font-size: 12px; color: var(--amber); opacity: .7; font-variant-numeric: tabular-nums; }
-  #s-notes .btn { color: var(--amber); border-color: var(--amber); }
+  .cam-msg p { white-space: pre-line; }
+  #s-notes { background: var(--bg); gap: 14px; }
+  .app-bar { display: flex; align-items: center; gap: 12px; min-height: 44px; }
+  .app-bar h1 { font-family: var(--display); font-weight: 400; font-size: 30px; color: var(--amber); line-height: 1; flex: 1; }
+  .app-bar .btn { padding: 8px 12px; min-height: 40px; font-size: 13px; color: var(--amber); border-color: var(--amber); }
+  #note-list { display: flex; flex-direction: column; border-top: 1px solid #2a2418; overflow-y: auto; }
+  .entry { display: flex; gap: 12px; align-items: baseline; text-align: left; background: none; border: 0;
+    border-bottom: 1px solid #2a2418; padding: 14px 2px; color: var(--ink); font-size: 15px; min-height: 48px; }
+  .entry .n { color: var(--amber); font-size: 12px; font-variant-numeric: tabular-nums; flex: none; }
+  .entry .new { margin-left: auto; color: var(--bg); background: var(--amber); font-size: 10px; padding: 2px 6px; flex: none; }
+  .entry:active { background: #17130b; }
+  #note-body { flex: 1; overflow-y: auto; font-size: 15px; line-height: 1.65; white-space: pre-line;
+    max-width: 62ch; -webkit-user-select: text; user-select: text; }
+  #note-sign { font-family: var(--display); font-size: 26px; color: var(--amber); }
 
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition: none !important; }
@@ -271,13 +279,13 @@
 
   <!-- 7. La libreta de Prometeo -->
   <section class="scene" id="s-notes" hidden>
-    <h1>La libreta de Prometeo</h1>
-    <div id="note"></div>
-    <div class="row" style="align-items:center">
-      <span id="note-page" class="grow"></span>
-      <button class="btn" id="note-prev">atrás</button>
-      <button class="btn" id="note-next">pasar página</button>
+    <div class="app-bar">
+      <h1 id="note-title">Libreta</h1>
+      <button class="btn" id="note-back">inicio</button>
     </div>
+    <div id="note-list"></div>
+    <div id="note-body" hidden></div>
+    <div id="note-sign" hidden>— P.</div>
   </section>
 
 </div>
@@ -288,7 +296,7 @@
   const $ = (s) => document.querySelector(s);
   const sleep = (ms) => new Promise(r => setTimeout(r, ms));
   const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const state = { nick: "" };
+  const state = { nick: "", notebook: false };
 
   function show(id) {
     document.querySelectorAll(".scene").forEach(s => { s.hidden = s.id !== id; });
@@ -335,7 +343,7 @@
     ["Ajustes", "%", "Ajustes no ajustables."],
     ["Tienda", "$", "La tienda de Olimpo no está disponible en tu realidad."],
     ["Reloj", "::", "Son las ██:██. Llegas tarde."],
-    ["Notas", "¶", "Nota 1: «Ver la libreta». ¿Qué libreta?"],
+    ["Libreta", "¶", "Vacía. Alguien se la ha llevado. O la ha escondido."],
   ];
   let homeClean = false;
   let toastTimer = 0;
@@ -349,23 +357,30 @@
 
   function sceneHome() {
     show("s-home");
-    $("#s-home").classList.add("zoom");
+    const first = !state.nick;
+    $("#s-home").classList.toggle("zoom", first);
     const grid = $("#icons");
     grid.innerHTML = "";
     for (const [name, glyph, err] of ICONS) {
+      const live = !err || (name === "Libreta" && state.notebook);
       const b = document.createElement("button");
-      b.className = "icon" + (err ? "" : " live");
+      b.className = "icon" + (live ? " live" : "");
       b.innerHTML = `<div class="tile">${glyph}</div><span>${name}</span>`;
       b.onclick = () => {
-        if (!err) {
+        if (name === "Libreta" && state.notebook) return sceneNotes();
+        if (name === "code_cam") {
           if (!homeClean) return toast("<b>¿code_cam?</b> Límpiala un poco más, que no se ve nada.");
-          return sceneNick();
+          return state.nick ? reopenCam() : sceneNick();
         }
         toast(`<b>${name}:</b> ${err}`);
       };
       grid.appendChild(b);
     }
-    requestAnimationFrame(initSmudge);
+    if (state.notebook) {
+      $("#home-hint").textContent = "Nueva app desbloqueada: Libreta. Fin de la intro (prototipo).";
+    }
+    if (first) requestAnimationFrame(initSmudge);
+    else { homeClean = true; $("#smudge").classList.add("clean"); }
   }
 
   function initSmudge() {
@@ -553,7 +568,7 @@
   // ---------- 6. code_cam ----------
   const video = $("#cam-video");
   const cam = AsciiCam($("#cam-canvas"), video);
-  let camPhase = "intro";   // intro | arrow | body
+  let camPhase = "intro";   // intro | arrow | body | import | free
   let steps = 0;
   let notebookAt = null;    // posición del cuaderno en px CSS dentro del canvas
 
@@ -614,11 +629,13 @@
     if (action) { b.textContent = action[0]; b.onclick = action[1]; b.hidden = false; } else b.hidden = true;
   }
 
+  // Los mensajes avanzan cuando el jugador toca «seguir»: cada cual lee a su ritmo
+  const step = (text, label = "seguir") => new Promise(res => setMsg(text, [label, res]));
+
   async function runCam() {
     camPhase = "intro";
     cam.overlay = null;
-    setMsg("Esto es tu casa. Así la ve el código.");
-    await sleep(3200);
+    await step("Esto es tu casa. Así la ve el código.");
     camPhase = "arrow";
     cam.overlay = arrowOverlay;
     $("#signal").hidden = false; updateSignal();
@@ -628,15 +645,35 @@
   }
 
   async function toBody() {
-    if (camPhase === "body") return;
+    if (camPhase !== "arrow") return;
     camPhase = "body";
     $("#signal").hidden = true;
     cam.overlay = bodyOverlay;
-    setMsg("Una silueta de tiza en el suelo. Solo existe en el código.");
-    await sleep(3500);
-    setMsg("No huele a muerto.");
-    await sleep(2500);
-    setMsg("Donde estaban las manos hay algo.", ["coger la libreta", sceneNotes]);
+    await step("Una silueta de tiza en el suelo. Solo existe en el código.");
+    await step("No huele a muerto.");
+    setMsg("Donde estaban las manos hay algo. Tócalo.", ["importar", importNotebook]);
+  }
+
+  // La libreta no se lee aquí: se importa a NarthexOS y desbloquea su app
+  async function importNotebook() {
+    if (camPhase !== "body") return;
+    camPhase = "import";
+    setMsg("");
+    for (let i = 0; i <= 10; i++) {
+      $("#cam-text").textContent = `importando libreta_prometeo.nx\n${"▮".repeat(i)}${"▯".repeat(10 - i)} ${i * 10}%`;
+      await sleep(220);
+    }
+    state.notebook = true;
+    setMsg("Libreta importada. Nueva app desbloqueada en NarthexOS.", ["volver al inicio", sceneHome]);
+  }
+
+  // Volver a la code_cam desde el inicio: mirar libremente
+  function reopenCam() {
+    camPhase = "free";
+    cam.overlay = state.notebook ? bodyOverlay : null;
+    show("s-cam");
+    requestAnimationFrame(loop);
+    setMsg("La silueta sigue ahí. Prometeo no.", ["volver al inicio", sceneHome]);
   }
 
   $("#cam-toggle").onclick = (e) => {
@@ -649,7 +686,7 @@
   $("#cam-canvas").addEventListener("pointerdown", (e) => {
     if (camPhase !== "body" || !notebookAt) return;
     const r = e.currentTarget.getBoundingClientRect();
-    if (Math.hypot(e.clientX - r.left - notebookAt[0], e.clientY - r.top - notebookAt[1]) < 60) sceneNotes();
+    if (Math.hypot(e.clientX - r.left - notebookAt[0], e.clientY - r.top - notebookAt[1]) < 60) importNotebook();
   });
 
   // Flecha rellena que sube y baja despacio (sin parpadeos)
@@ -717,7 +754,8 @@
       else ch = "/";
       out.push({ r, c, ch, color: "#f2f2ee" });
     }
-    // la libreta, donde estaba la mano izquierda
+    // la libreta, donde estaba la mano izquierda (hasta que se importa)
+    if (state.notebook) { notebookAt = null; return out; }
     const hy = 0.01, hx = -0.34;
     const nr = Math.round((hy * size + top) / g.ch - 0.5);
     const nc = Math.round((hx * persp(hy) * size + W / 2) / g.cw - 0.5) - 1;
@@ -727,36 +765,48 @@
   }
 
   // ---------- 7. Libreta ----------
+  // Entradas de la libreta: guía y pistas. Se leen en una app, a su ritmo, con letra legible.
   const NOTES = () => [
-    `Si estás leyendo esto, has encontrado el fuego. O el fuego te ha encontrado a ti.\n\nHola, ${state.nick}. Buen nombre. Falso, espero.`,
-    "Lo que ves por la code_cam es el mundo como lo ven ellos: datos.\n\nTu sofá es un dato. Tu gato es un dato con bigotes.\n\nLos Dioses lo ven así todo el tiempo. Ahora tú también.",
-    "Los Dioses son cinco.\n\nOlimpo te mira.\nAsgard te protege de cosas que vende Asgard.\nHeliópolis te da de comer y luego te cura.\nBabel te presta para pagar a los otros cuatro.\nHefesto lo fabrica todo y nadie le da las gracias.",
-    "Reglas para no arder:\n\n1. No aceptes cookies de desconocidos.\n2. Lee la letra pequeña. Ahí esconden lo bueno y lo malo.\n3. Si un botón dice «No, prefiero que me hackeen», es una trampa. Y un insulto.",
-    "Este teléfono está roto. Yo también, un poco. Lo arreglaremos por partes.\n\nEmpieza por el Correo. La contraseña está donde nadie mira.\n\n— P.\n\nPD: si alguien te dice que estoy muerto, pregúntale cómo lo sabe.",
-    "FIN DE LA INTRO\n\nCapítulo 1: El fuego.\nPróximamente.\n\n(Esto es un prototipo. Si te ha gustado, díselo a quien te pasó el enlace.)",
+    ["Léeme primero", `Si estás leyendo esto, has encontrado el fuego. O el fuego te ha encontrado a ti.\n\nHola, ${state.nick}. Buen nombre. Falso, espero.`],
+    ["Qué es la code_cam", "Lo que ves por la code_cam es el mundo como lo ven ellos: datos.\n\nTu sofá es un dato. Tu gato es un dato con bigotes.\n\nLos Dioses lo ven así todo el tiempo. Ahora tú también."],
+    ["Los cinco Dioses", "Olimpo te mira.\nAsgard te protege de cosas que vende Asgard.\nHeliópolis te da de comer y luego te cura.\nBabel te presta para pagar a los otros cuatro.\nHefesto lo fabrica todo y nadie le da las gracias."],
+    ["Reglas para no arder", "1. No aceptes cookies de desconocidos.\n2. Lee la letra pequeña. Ahí esconden lo bueno y lo malo.\n3. Si un botón dice «No, prefiero que me hackeen», es una trampa. Y un insulto."],
+    ["Siguiente paso", "Este teléfono está roto. Yo también, un poco. Lo arreglaremos por partes.\n\nEmpieza por el Correo. La contraseña está donde nadie mira.\n\nPD: si alguien te dice que estoy muerto, pregúntale cómo lo sabe.\n\n(Aquí acaba la intro del prototipo. El capítulo 1 viene después.)"],
   ];
-  let page = 0;
+  const read = new Set();
+  let openEntry = -1;
 
   function sceneNotes() {
     show("s-notes");
-    page = 0; renderNote();
+    openEntry = -1; renderNotes();
   }
-  function renderNote() {
+  function renderNotes() {
     const notes = NOTES();
-    $("#note").textContent = notes[page];
-    $("#note-page").textContent = `${page + 1} / ${notes.length}`;
-    $("#note-prev").hidden = page === 0;
-    $("#note-next").textContent = page === notes.length - 1 ? "volver a empezar" : "pasar página";
+    const inList = openEntry < 0;
+    $("#note-list").hidden = !inList;
+    $("#note-body").hidden = inList;
+    $("#note-sign").hidden = inList || openEntry !== notes.length - 1;
+    $("#note-title").textContent = inList ? "Libreta" : notes[openEntry][0];
+    $("#note-back").textContent = inList ? "inicio" : "volver";
+    if (!inList) { $("#note-body").textContent = notes[openEntry][1]; $("#note-body").scrollTop = 0; return; }
+    const list = $("#note-list");
+    list.innerHTML = "";
+    notes.forEach(([title], i) => {
+      const b = document.createElement("button");
+      b.className = "entry";
+      b.innerHTML = `<span class="n">${String(i + 1).padStart(2, "0")}</span><span></span>${read.has(i) ? "" : '<span class="new">nuevo</span>'}`;
+      b.children[1].textContent = title;
+      b.onclick = () => { openEntry = i; read.add(i); renderNotes(); };
+      list.appendChild(b);
+    });
   }
-  $("#note-prev").onclick = () => { page = Math.max(0, page - 1); renderNote(); };
-  $("#note-next").onclick = () => {
-    if (page === NOTES().length - 1) return location.reload();
-    page++; renderNote();
+  $("#note-back").onclick = () => {
+    if (openEntry >= 0) { openEntry = -1; renderNotes(); } else sceneHome();
   };
 
   // Atajo para probar: index.html#cam salta a la code_cam en simulación, #toe a la huella, etc.
   const jump = { "#home": sceneHome, "#nick": sceneNick, "#toe": () => { state.nick = "test"; sceneToe(); },
-    "#perm": scenePerm, "#cam": () => { state.nick = "test"; startCam(false); }, "#notes": () => { state.nick = "test"; sceneNotes(); } }[location.hash];
+    "#perm": scenePerm, "#cam": () => { state.nick = "test"; startCam(false); }, "#notes": () => { state.nick = "test"; state.notebook = true; sceneNotes(); } }[location.hash];
   (jump || sceneFound)();
 })();
 </script>
