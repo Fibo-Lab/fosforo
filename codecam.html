@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>code_cam</title>
+<style>
+  :root { --fg: #39ff6a; --bg: #000; --dim: #0f3a1c; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; background: var(--bg); color: var(--fg);
+    font-family: "DejaVu Sans Mono", Menlo, Consolas, monospace; overflow: hidden;
+    -webkit-user-select: none; user-select: none; touch-action: none; }
+  #stage { position: fixed; inset: 0; }
+  video, canvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  video { visibility: hidden; }
+  body.normal video { visibility: visible; }
+  body.normal #ascii { visibility: hidden; }
+  /* scanlines estáticas: sin parpadeo */
+  #scan { position: absolute; inset: 0; pointer-events: none;
+    background: repeating-linear-gradient(0deg, rgba(0,0,0,.18) 0 1px, transparent 1px 3px); }
+  body.normal #scan { display: none; }
+  #hud { position: fixed; left: 0; right: 0; bottom: 0; padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+    display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;
+    background: linear-gradient(transparent, rgba(0,0,0,.85)); }
+  button { font: inherit; font-size: 14px; color: var(--fg); background: rgba(0,0,0,.6);
+    border: 1px solid var(--fg); padding: 10px 14px; border-radius: 2px; min-width: 44px; }
+  button:active { background: var(--dim); }
+  #top { position: fixed; top: 0; left: 0; right: 0; padding: calc(10px + env(safe-area-inset-top)) 16px 10px;
+    font-size: 12px; display: flex; justify-content: space-between; pointer-events: none;
+    text-shadow: 0 0 4px #000; }
+  #gate { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center;
+    justify-content: center; gap: 18px; padding: 24px; text-align: center; background: #000; z-index: 5; }
+  #gate pre { font-size: 13px; line-height: 1.2; }
+  #gate p { max-width: 32ch; font-size: 14px; line-height: 1.5; opacity: .85; }
+  .glitch { display: inline-block; transform: skewX(-8deg); }
+</style>
+</head>
+<body>
+<div id="stage">
+  <video id="video" playsinline muted></video>
+  <canvas id="ascii"></canvas>
+  <div id="scan"></div>
+</div>
+
+<div id="top"><span>NarthexOS // code_cam</span><span id="stats"></span></div>
+
+<div id="hud">
+  <button id="btnMode">cámara normal</button>
+  <button id="btnMinus">−</button>
+  <button id="btnPlus">+</button>
+  <button id="btnRamp">charset</button>
+  <button id="btnFlip">⟲ cam</button>
+</div>
+
+<div id="gate">
+<pre>
+ _  _              _   _
+| \| |__ _ _ _ ___| |_| |_  _____ __
+| .` / _` | '_|  _|   \  _|/ -_) \ /
+|_|\_\__,_|_|  \__|_||_\__|\___/_\_\
+</pre>
+  <p><span class="glitch">c0de_cam</span> necesita ver lo que tú ves.<br>
+     Nada sale de este teléfono. Bueno, de <em>tu</em> teléfono.</p>
+  <button id="btnStart">abrir code_cam</button>
+  <p id="err" style="color:#ff5a5a"></p>
+</div>
+
+<script src="ascii.js"></script>
+<script>
+(() => {
+  const RAMPS = [
+    " .:-=+*#%@",
+    " .'`^\",:;Il!i><~+_-?][}{1)(|/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$",
+    " 01",
+    " ░▒▓█",
+  ];
+  let rampIdx = 0;
+  const CELL_MIN = 6, CELL_MAX = 24;
+  let facing = "environment";
+  let stream = null;
+
+  const video = document.getElementById("video");
+  const stats = document.getElementById("stats");
+  const cam = AsciiCam(document.getElementById("ascii"), video);
+  cam.cellPx = 10;
+
+  async function startCamera() {
+    if (stream) stream.getTracks().forEach(t => t.stop());
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: facing }, width: { ideal: 1280 }, height: { ideal: 720 } },
+      audio: false,
+    });
+    video.srcObject = stream;
+    await video.play();
+    // La webcam del portátil no informa "environment": se trata como frontal y se espeja
+    const s = stream.getVideoTracks()[0].getSettings();
+    cam.mirror = s.facingMode ? s.facingMode === "user" : true;
+  }
+
+  let last = performance.now(), frames = 0;
+  function frame(t) {
+    requestAnimationFrame(frame);
+    if (document.body.classList.contains("normal")) return;
+    cam.render(t);
+    frames++;
+    if (t - last > 1000) {
+      stats.textContent = `${cam.grid.cols}×${cam.grid.rows} · ${frames} fps`;
+      frames = 0; last = t;
+    }
+  }
+
+  document.getElementById("btnMode").onclick = (e) => {
+    const normal = document.body.classList.toggle("normal");
+    e.target.textContent = normal ? "code_cam" : "cámara normal";
+  };
+  document.getElementById("btnMinus").onclick = () => { cam.cellPx = Math.max(CELL_MIN, cam.cellPx - 2); };
+  document.getElementById("btnPlus").onclick = () => { cam.cellPx = Math.min(CELL_MAX, cam.cellPx + 2); };
+  document.getElementById("btnRamp").onclick = () => { rampIdx = (rampIdx + 1) % RAMPS.length; cam.ramp = RAMPS[rampIdx]; };
+  document.getElementById("btnFlip").onclick = async () => {
+    if (cam.demo) return;
+    facing = facing === "environment" ? "user" : "environment";
+    try { await startCamera(); } catch (e) { console.warn(e); }
+  };
+
+  document.getElementById("btnStart").onclick = async () => {
+    const err = document.getElementById("err");
+    try {
+      if (!navigator.mediaDevices?.getUserMedia) throw new Error("Este navegador no da acceso a la cámara (¿falta HTTPS?).");
+      await startCamera();
+    } catch (e) {
+      err.textContent = `${e.message || e} — modo demo sin cámara.`;
+      cam.demo = true;
+      await new Promise(r => setTimeout(r, 1500));
+    }
+    document.getElementById("gate").style.display = "none";
+    requestAnimationFrame(frame);
+  };
+})();
+</script>
+</body>
+</html>

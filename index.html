@@ -3,225 +3,761 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
-<title>code_cam</title>
+<title>Narthex · intro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=VT323&display=swap">
 <style>
-  :root { --fg: #39ff6a; --bg: #000; --dim: #0f3a1c; }
+  /* Una pantalla de móvil a sangre; en escritorio, un móvil centrado. Un solo look oscuro a propósito. */
+  :root {
+    color-scheme: dark;
+    --bg: #050806;        /* negro con un punto de verde */
+    --screen: #0a0f0c;
+    --fg: #39ff6a;        /* fósforo */
+    --fg-dim: #1f7a3c;
+    --ink: #d6ffe0;       /* texto claro */
+    --amber: #ffb347;     /* Prometeo */
+    --red: #ff3b3b;       /* alarma */
+    --chalk: #f2f2ee;
+    --display: "VT323", "DejaVu Sans Mono", Menlo, monospace;
+    --body: "IBM Plex Mono", "DejaVu Sans Mono", Menlo, Consolas, monospace;
+  }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body { height: 100%; background: var(--bg); color: var(--fg);
-    font-family: "DejaVu Sans Mono", Menlo, Consolas, monospace; overflow: hidden;
-    -webkit-user-select: none; user-select: none; touch-action: none; }
-  #stage { position: fixed; inset: 0; }
-  video, canvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-  video { visibility: hidden; }
-  body.normal video { visibility: visible; }
-  body.normal #ascii { visibility: hidden; }
-  /* scanlines estáticas: sin parpadeo */
+  html, body { height: 100%; background: var(--bg); color: var(--ink); font-family: var(--body);
+    overflow: hidden; -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
+  body { display: grid; place-items: center; }
+  [hidden] { display: none !important; }
+
+  #phone { position: relative; width: 100%; height: 100%; background: var(--screen); overflow: hidden; }
+  @media (min-width: 640px) and (min-height: 700px) {
+    #phone { width: 390px; height: min(844px, 94vh); border-radius: 38px;
+      box-shadow: 0 0 0 10px #111, 0 0 0 11px #2a2a2a, 0 30px 80px rgba(0,0,0,.6); }
+  }
+
+  .scene { position: absolute; inset: 0; display: flex; flex-direction: column;
+    padding: calc(24px + env(safe-area-inset-top, 0px)) max(20px, env(safe-area-inset-right, 0px))
+             calc(24px + env(safe-area-inset-bottom, 0px)) max(20px, env(safe-area-inset-left, 0px));
+    animation: fadein .5s ease both; }
+  @keyframes fadein { from { opacity: 0 } to { opacity: 1 } }
+
+  button { font: inherit; cursor: pointer; }
+  .btn { font-family: var(--body); font-size: 15px; color: var(--fg); background: transparent;
+    border: 1px solid var(--fg); padding: 12px 18px; min-height: 44px; border-radius: 2px; }
+  .btn:active { background: var(--fg-dim); }
+  .btn:focus-visible, input:focus-visible { outline: 2px solid var(--amber); outline-offset: 3px; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .grow { flex: 1; }
+  .small { font-size: 12px; opacity: .7; line-height: 1.5; }
+  .display { font-family: var(--display); color: var(--fg); line-height: 1; }
+
+  /* 1. Hallazgo */
+  #s-found { justify-content: center; gap: 28px; background: var(--bg); }
+  #found-text { font-size: 17px; line-height: 1.7; min-height: 11em; white-space: pre-line; }
+  #found-text .cursor { display: inline-block; width: .6em; background: var(--ink); animation: blink 1.2s steps(1) infinite; }
+  @keyframes blink { 50% { opacity: 0 } }
+
+  /* 2. Pantalla rota */
+  #s-home { padding: 0; background:
+      radial-gradient(120% 70% at 30% 10%, #1b2a3a 0%, #0c1218 55%, #07090b 100%); }
+  #s-home.zoom { animation: zoomin .9s cubic-bezier(.2,.7,.2,1) both; }
+  @keyframes zoomin { from { transform: scale(.45); opacity: 0; filter: blur(4px) } to { transform: none; opacity: 1; filter: none } }
+  .status { display: flex; justify-content: space-between; font-size: 12px; opacity: .8;
+    padding: calc(14px + env(safe-area-inset-top, 0px)) 22px 0; }
+  .status .batt { color: var(--red); }
+  #icons { display: grid; grid-template-columns: repeat(3, 1fr); gap: 26px 12px; padding: 48px 26px 0; }
+  .icon { display: flex; flex-direction: column; align-items: center; gap: 8px; background: none; border: 0;
+    color: var(--ink); font-size: 11px; }
+  .icon .tile { position: relative; width: 62px; height: 62px; border-radius: 16px; display: grid; place-items: center;
+    background: #26303a; color: #8996a3; font-family: var(--body); font-size: 20px; font-weight: 600;
+    filter: grayscale(1); }
+  .icon .tile::after { content: "!"; position: absolute; top: -5px; right: -5px; width: 18px; height: 18px;
+    border-radius: 50%; background: var(--red); color: #fff; font-size: 12px; display: grid; place-items: center; }
+  .icon.live .tile { background: #031a0b; color: var(--fg); filter: none; box-shadow: 0 0 0 1px var(--fg-dim);
+    animation: pulse 2.4s ease-in-out infinite; }
+  .icon.live .tile::after { display: none; }
+  .icon.live span { color: var(--fg); }
+  @keyframes pulse { 0%, 100% { box-shadow: 0 0 0 1px var(--fg-dim), 0 0 0 0 rgba(57,255,106,.0) }
+                     50% { box-shadow: 0 0 0 1px var(--fg), 0 0 22px 6px rgba(57,255,106,.35) } }
+  #cracks, #smudge { position: absolute; inset: 0; width: 100%; height: 100%; }
+  #cracks { pointer-events: none; }
+  #smudge { touch-action: none; }
+  #smudge.clean { pointer-events: none; }
+  #home-hint { position: absolute; left: 0; right: 0; bottom: calc(36px + env(safe-area-inset-bottom, 0px));
+    text-align: center; font-size: 14px; pointer-events: none; padding: 0 24px; text-shadow: 0 1px 3px #000; }
+  #toast { position: absolute; left: 18px; right: 18px; bottom: calc(90px + env(safe-area-inset-bottom, 0px));
+    background: #000; border: 1px solid var(--red); color: var(--ink); padding: 12px 14px; font-size: 13px;
+    line-height: 1.45; transform: skewX(-3deg); }
+  #toast b { color: var(--red); font-weight: 600; }
+
+  /* Pantallas de NarthexOS */
+  .os { background: var(--bg); gap: 18px; }
+  .os .boot { font-size: 13px; line-height: 1.7; color: var(--fg); white-space: pre-line; }
+  .os h1 { font-family: var(--display); font-weight: 400; font-size: 34px; color: var(--fg); line-height: 1; text-wrap: balance; }
+  .os p { font-size: 14px; line-height: 1.6; }
+  .glitch { display: inline-block; transform: skewX(-10deg); }
+  input[type=text] { font: inherit; font-size: 18px; color: var(--fg); background: #000; border: 1px solid var(--fg-dim);
+    padding: 12px; width: 100%; border-radius: 2px; -webkit-user-select: text; user-select: text; }
+  .warn { border-left: 3px solid var(--amber); padding: 8px 12px; color: var(--amber); font-size: 13px; line-height: 1.55; }
+  .spacer { flex: 1; }
+
+  /* 4. Huella del pie */
+  #s-toe { align-items: center; text-align: center; }
+  #toe-area { position: relative; flex: 1; width: 100%; }
+  #toe { position: absolute; left: 50%; top: 45%; transform: translate(-50%, -50%); width: 150px; height: 190px;
+    background: none; border: 0; color: var(--fg); transition: left .18s ease, top .18s ease; touch-action: none; }
+  #toe svg { width: 100%; height: 100%; }
+  #toe-label { font-family: var(--display); font-size: 26px; color: var(--fg); }
+  #s-toe.alarm { background: #1a0303; animation: alarm 1s ease-in-out infinite; }
+  @keyframes alarm { 50% { background: #3a0606 } }
+  #s-toe.alarm h1, #s-toe.alarm #toe-label { color: var(--red); }
+  #s-toe.alarm #toe { color: var(--red); }
+  #countdown { font-family: var(--display); font-size: 96px; color: var(--red); line-height: 1; }
+  #reward { text-align: left; }
+  .item { display: flex; gap: 14px; align-items: flex-start; border: 1px solid var(--fg-dim); padding: 12px; }
+  .item pre { font-family: var(--body); color: var(--amber); font-size: 12px; line-height: 1.1; }
+  .item b { color: var(--fg); font-weight: 600; }
+
+  /* 5. Permisos */
+  .dialog { border: 1px solid var(--fg); background: #000; padding: 18px; display: flex; flex-direction: column; gap: 14px;
+    transform: skewY(-1.5deg); box-shadow: 6px 6px 0 var(--fg-dim); }
+  .dialog label { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; line-height: 1.45; }
+  .dialog input { accent-color: var(--fg); width: 18px; height: 18px; margin-top: 2px; flex: none; }
+
+  /* 6. code_cam */
+  #s-cam { padding: 0; background: #000; }
+  #cam-canvas, #cam-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  #cam-video { visibility: hidden; }
+  #s-cam.normal #cam-video { visibility: visible; }
+  #s-cam.normal #cam-canvas { visibility: hidden; }
   #scan { position: absolute; inset: 0; pointer-events: none;
-    background: repeating-linear-gradient(0deg, rgba(0,0,0,.18) 0 1px, transparent 1px 3px); }
-  body.normal #scan { display: none; }
-  #hud { position: fixed; left: 0; right: 0; bottom: 0; padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
-    display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;
-    background: linear-gradient(transparent, rgba(0,0,0,.85)); }
-  button { font: inherit; font-size: 14px; color: var(--fg); background: rgba(0,0,0,.6);
-    border: 1px solid var(--fg); padding: 10px 14px; border-radius: 2px; min-width: 44px; }
-  button:active { background: var(--dim); }
-  #top { position: fixed; top: 0; left: 0; right: 0; padding: calc(10px + env(safe-area-inset-top)) 16px 10px;
-    font-size: 12px; display: flex; justify-content: space-between; pointer-events: none;
-    text-shadow: 0 0 4px #000; }
-  #gate { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center;
-    justify-content: center; gap: 18px; padding: 24px; text-align: center; background: #000; z-index: 5; }
-  #gate pre { font-size: 13px; line-height: 1.2; }
-  #gate p { max-width: 32ch; font-size: 14px; line-height: 1.5; opacity: .85; }
-  .glitch { display: inline-block; transform: skewX(-8deg); }
+    background: repeating-linear-gradient(0deg, rgba(0,0,0,.2) 0 1px, transparent 1px 3px); }
+  #s-cam.normal #scan { display: none; }
+  .cam-top { position: absolute; top: 0; left: 0; right: 0; display: flex; justify-content: space-between; align-items: center;
+    padding: calc(10px + env(safe-area-inset-top, 0px)) 14px 10px; background: linear-gradient(#000c, transparent);
+    font-size: 12px; color: var(--fg); }
+  .cam-top .btn { padding: 8px 10px; font-size: 12px; min-height: 36px; background: #000a; }
+  .cam-msg { position: absolute; left: 14px; right: 14px; bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    background: #000d; border: 1px solid var(--fg-dim); padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+  .cam-msg p { font-size: 14px; line-height: 1.5; min-height: 1.5em; }
+  #signal { font-family: var(--body); color: var(--fg); letter-spacing: 2px; font-size: 14px; }
+
+  /* 7. Libreta */
+  #s-notes { background: #0d0a05; gap: 16px; }
+  #s-notes h1 { font-family: var(--display); font-weight: 400; font-size: 30px; color: var(--amber); }
+  #note { flex: 1; font-family: var(--display); font-size: 25px; line-height: 1.2; color: #ffd9a0; white-space: pre-line;
+    overflow-y: auto; -webkit-user-select: text; user-select: text; }
+  #note-page { font-size: 12px; color: var(--amber); opacity: .7; font-variant-numeric: tabular-nums; }
+  #s-notes .btn { color: var(--amber); border-color: var(--amber); }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition: none !important; }
+  }
 </style>
 </head>
 <body>
-<div id="stage">
-  <video id="video" playsinline muted></video>
-  <canvas id="ascii"></canvas>
-  <div id="scan"></div>
+<div id="phone">
+
+  <!-- 1. Hallazgo -->
+  <section class="scene" id="s-found">
+    <div id="found-text"></div>
+    <button class="btn" id="btn-pick" hidden>recoger el teléfono</button>
+  </section>
+
+  <!-- 2. Pantalla rota: limpiar las manchas -->
+  <section class="scene" id="s-home" hidden>
+    <div class="status"><span>??:??</span><span>sin señal</span><span class="batt">3%</span></div>
+    <div id="icons"></div>
+    <svg id="cracks" viewBox="0 0 100 200" preserveAspectRatio="none" aria-hidden="true">
+      <g fill="none" stroke="rgba(255,255,255,.55)" stroke-width="1.1" vector-effect="non-scaling-stroke">
+        <polyline vector-effect="non-scaling-stroke" points="72,58 60,40 55,22 48,0"/>
+        <polyline vector-effect="non-scaling-stroke" points="72,58 88,44 100,40"/>
+        <polyline vector-effect="non-scaling-stroke" points="72,58 81,80 86,104 100,118"/>
+        <polyline vector-effect="non-scaling-stroke" points="72,58 58,70 40,76 22,92 0,98"/>
+        <polyline vector-effect="non-scaling-stroke" points="72,58 66,92 70,130 62,160 66,200"/>
+        <polyline vector-effect="non-scaling-stroke" points="72,58 92,62 100,70"/>
+        <polyline vector-effect="non-scaling-stroke" points="60,40 46,46 30,40"/>
+        <polyline vector-effect="non-scaling-stroke" points="81,80 70,86 66,92"/>
+        <polyline vector-effect="non-scaling-stroke" points="40,76 44,90 38,108"/>
+        <polygon vector-effect="non-scaling-stroke" points="70,54 75,55 74,61 69,60" fill="rgba(255,255,255,.25)"/>
+      </g>
+    </svg>
+    <canvas id="smudge"></canvas>
+    <div id="home-hint">Desliza el dedo para limpiar la pantalla</div>
+    <div id="toast" hidden></div>
+  </section>
+
+  <!-- 3. Nickname -->
+  <section class="scene os" id="s-nick" hidden>
+    <div class="boot" id="nick-boot"></div>
+    <form id="nick-form" class="row" hidden autocomplete="off">
+      <input type="text" id="nick" maxlength="20" placeholder="nickname" aria-label="nickname" spellcheck="false" autocapitalize="off">
+      <button class="btn grow" type="submit">entrar</button>
+    </form>
+    <div id="nick-warn" class="warn" hidden></div>
+    <button class="btn" id="nick-force" hidden>es un nickname, lo juro</button>
+  </section>
+
+  <!-- 4. Huella del pie -->
+  <section class="scene os" id="s-toe" hidden>
+    <h1 id="toe-title">Verificación biométrica</h1>
+    <p id="toe-sub">Por tu seguridad, escanea tu huella.</p>
+    <div id="countdown" hidden>10</div>
+    <div id="toe-area">
+      <button id="toe" aria-label="place your toe here">
+        <svg viewBox="0 0 150 190" aria-hidden="true">
+          <g fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M75 6 C122 6 144 46 144 96 C144 150 114 184 75 184 C36 184 6 150 6 96 C6 46 28 6 75 6 Z" stroke-width="3"/>
+            <path d="M75 30 C108 30 124 60 124 96 C124 136 102 162 75 162 C48 162 26 136 26 96 C26 60 42 30 75 30 Z" opacity=".6"/>
+            <path d="M75 52 C96 52 106 72 106 96 C106 122 92 140 75 140 C58 140 44 122 44 96 C44 72 54 52 75 52 Z" opacity=".5"/>
+            <path d="M75 74 C86 74 90 84 90 96 C90 110 84 118 75 118 C66 118 60 110 60 96 C60 84 64 74 75 74 Z" opacity=".4"/>
+          </g>
+        </svg>
+      </button>
+    </div>
+    <div id="toe-label">place your toe here</div>
+    <div id="toe-after" hidden class="row" style="flex-direction:column; gap:12px; width:100%">
+      <p id="toe-joke"></p>
+      <button class="btn" id="toe-next">continuar</button>
+    </div>
+  </section>
+
+  <!-- 4b. Premio del pie -->
+  <section class="scene os" id="s-reward" hidden>
+    <h1>Huella de pie verificada</h1>
+    <p>Eres la primera persona que lo hace. O la primera que lo admite.</p>
+    <div class="item"><pre> ___
+|   |
+|~~~|
+|___|</pre><div><b>Cera de Ulises</b><p class="small">Silencia las sirenas (anuncios) durante una misión.</p></div></div>
+    <div class="item"><pre>.---.
+| % |
+'---'</pre><div><b>10% de descuento en terapia</b><p class="small">Válido para hablar de por qué has puesto el pie en un móvil.</p></div></div>
+    <div class="spacer"></div>
+    <p class="small">No se ha capturado ni guardado nada. Ni siquiera la pelusa.</p>
+    <button class="btn" id="reward-next">continuar</button>
+  </section>
+
+  <!-- 5. Permiso de cámara dentro de la ficción -->
+  <section class="scene os" id="s-perm" hidden>
+    <div class="spacer"></div>
+    <div class="dialog">
+      <p class="display" style="font-size:26px">NarthexOS quiere acceder a:</p>
+      <label><input type="checkbox" id="perm-cam" checked disabled> la cámara</label>
+      <label><input type="checkbox" id="perm-mem"> tus recuerdos de infancia <span class="small">(opcional)</span></label>
+      <p id="perm-mem-msg" class="small" hidden>Denegado: tus recuerdos de infancia no caben. Nadie ha vaciado la papelera desde 2009.</p>
+      <div class="row">
+        <button class="btn grow" id="perm-no">no permitir</button>
+        <button class="btn grow" id="perm-yes">permitir</button>
+      </div>
+      <p class="small">Los dos botones son del mismo tamaño. Disfrútalo: fuera de aquí no será así.</p>
+    </div>
+    <p id="perm-status" class="small"></p>
+    <button class="btn" id="perm-demo" hidden>seguir con una simulación</button>
+    <div class="spacer"></div>
+  </section>
+
+  <!-- 6. code_cam: flecha y silueta -->
+  <section class="scene" id="s-cam" hidden>
+    <video id="cam-video" playsinline muted></video>
+    <canvas id="cam-canvas"></canvas>
+    <div id="scan"></div>
+    <div class="cam-top"><span>NarthexOS // code_cam</span><button class="btn" id="cam-toggle">cámara normal</button></div>
+    <div class="cam-msg">
+      <p id="cam-text"></p>
+      <div id="signal" hidden></div>
+      <button class="btn" id="cam-action" hidden></button>
+    </div>
+  </section>
+
+  <!-- 7. La libreta de Prometeo -->
+  <section class="scene" id="s-notes" hidden>
+    <h1>La libreta de Prometeo</h1>
+    <div id="note"></div>
+    <div class="row" style="align-items:center">
+      <span id="note-page" class="grow"></span>
+      <button class="btn" id="note-prev">atrás</button>
+      <button class="btn" id="note-next">pasar página</button>
+    </div>
+  </section>
+
 </div>
 
-<div id="top"><span>NarthexOS // code_cam</span><span id="stats"></span></div>
-
-<div id="hud">
-  <button id="btnMode">cámara normal</button>
-  <button id="btnMinus">−</button>
-  <button id="btnPlus">+</button>
-  <button id="btnRamp">charset</button>
-  <button id="btnFlip">⟲ cam</button>
-</div>
-
-<div id="gate">
-<pre>
- _  _              _   _
-| \| |__ _ _ _ ___| |_| |_  _____ __
-| .` / _` | '_|  _|   \  _|/ -_) \ /
-|_|\_\__,_|_|  \__|_||_\__|\___/_\_\
-</pre>
-  <p><span class="glitch">c0de_cam</span> necesita ver lo que tú ves.<br>
-     Nada sale de este teléfono. Bueno, de <em>tu</em> teléfono.</p>
-  <button id="btnStart">abrir code_cam</button>
-  <p id="err" style="color:#ff5a5a"></p>
-</div>
-
+<script src="ascii.js"></script>
 <script>
 (() => {
-  // Rampas de caracteres, de oscuro a claro
-  const RAMPS = [
-    " .:-=+*#%@",
-    " .'`^\",:;Il!i><~+_-?][}{1)(|/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$",
-    " 01",
-    " ░▒▓█",
+  const $ = (s) => document.querySelector(s);
+  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+  const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const state = { nick: "" };
+
+  function show(id) {
+    document.querySelectorAll(".scene").forEach(s => { s.hidden = s.id !== id; });
+  }
+
+  // Escribe texto letra a letra; un toque en la escena lo completa de golpe
+  async function type(el, text, speed = 32) {
+    let skip = false;
+    const scene = el.closest(".scene");
+    const onTap = () => { skip = true; };
+    scene.addEventListener("pointerdown", onTap);
+    const node = document.createTextNode("");
+    const cursor = document.createElement("span");
+    cursor.className = "cursor"; cursor.innerHTML = "&nbsp;";
+    el.replaceChildren(node, cursor);
+    for (const ch of text) {
+      if (skip || reduced) { node.data = text; break; }
+      node.data += ch;
+      await sleep(ch === "\n" ? speed * 10 : speed);
+    }
+    cursor.remove();
+    scene.removeEventListener("pointerdown", onTap);
+  }
+
+  // ---------- 1. Hallazgo ----------
+  async function sceneFound() {
+    show("s-found");
+    await type($("#found-text"),
+      "Un callejón. Llueve un poco.\n\nEntre dos cartones, algo vibra.\n\nUn teléfono. Roto, sucio y caliente.\nNo es de ninguna marca que conozcas.\n\nTodavía tiene batería.");
+    $("#btn-pick").hidden = false;
+  }
+  $("#btn-pick").onclick = sceneHome;
+
+  // ---------- 2. Pantalla rota ----------
+  const ICONS = [
+    ["Correo", "@", "ERR 0x00: buzón incinerado. Literalmente."],
+    ["Mapas", "N", "No sabemos dónde estás. Primera vez en la historia."],
+    ["Éter", "~", "Sin señal del Éter. Necesitas un usuario."],
+    ["Archivos", "[]", "Archivos cifrados. Clave: ████████"],
+    ["code_cam", "(o)", null],
+    ["Terminal", ">_", "permission denied (y con razón)"],
+    ["Cartera", "¤", "Saldo: 0. Deuda con Babel Capital: sí."],
+    ["Fotos", "#", "Las fotos se borraron solas. Sabia decisión."],
+    ["Ajustes", "%", "Ajustes no ajustables."],
+    ["Tienda", "$", "La tienda de Olimpo no está disponible en tu realidad."],
+    ["Reloj", "::", "Son las ██:██. Llegas tarde."],
+    ["Notas", "¶", "Nota 1: «Ver la libreta». ¿Qué libreta?"],
   ];
-  let rampIdx = 0;
-  let cellPx = 10;              // alto de celda en píxeles CSS
-  const CELL_MIN = 6, CELL_MAX = 24;
-  let facing = "environment";
-  let stream = null;
-  let mirror = false;
-  let demo = false;
+  let homeClean = false;
+  let toastTimer = 0;
 
-  const video = document.getElementById("video");
-  const out = document.getElementById("ascii");
-  const ctx = out.getContext("2d");
-  const small = document.createElement("canvas");
-  const sctx = small.getContext("2d", { willReadFrequently: true });
-  const stats = document.getElementById("stats");
-
-  // Proporción de un carácter monoespaciado (ancho/alto)
-  const CHAR_ASPECT = 0.6;
-
-  function resize() {
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    out.width = Math.round(innerWidth * dpr);
-    out.height = Math.round(innerHeight * dpr);
-  }
-  addEventListener("resize", resize);
-  resize();
-
-  async function startCamera() {
-    if (stream) stream.getTracks().forEach(t => t.stop());
-    stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: { ideal: facing }, width: { ideal: 1280 }, height: { ideal: 720 } },
-      audio: false,
-    });
-    video.srcObject = stream;
-    await video.play();
-    // La webcam del portátil no informa "environment": se trata como frontal y se espeja
-    const s = stream.getVideoTracks()[0].getSettings();
-    mirror = s.facingMode ? s.facingMode === "user" : true;
+  function toast(html) {
+    const t = $("#toast");
+    t.innerHTML = html; t.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { t.hidden = true; }, 2800);
   }
 
-  // Fondo sintético si no hay cámara (para probar en escritorio)
-  function drawDemo(t, w, h) {
-    const g = sctx.createRadialGradient(
-      w * (0.5 + 0.3 * Math.sin(t / 1700)), h * (0.5 + 0.3 * Math.cos(t / 2300)), 1,
-      w / 2, h / 2, Math.max(w, h) * 0.8);
-    g.addColorStop(0, "#fff"); g.addColorStop(0.4, "#777"); g.addColorStop(1, "#000");
-    sctx.fillStyle = g; sctx.fillRect(0, 0, w, h);
-    // la silueta del suelo
-    sctx.fillStyle = "#111";
-    sctx.beginPath(); sctx.ellipse(w * .5, h * .72, w * .18, h * .06, 0, 0, Math.PI * 2); sctx.fill();
-  }
-
-  // Dibuja el vídeo recortado tipo "cover" en el canvas pequeño
-  function drawCover(w, h) {
-    const vw = video.videoWidth, vh = video.videoHeight;
-    if (!vw) return false;
-    const scale = Math.max(w / vw, h / vh);
-    const dw = vw * scale, dh = vh * scale;
-    sctx.save();
-    if (mirror) { sctx.translate(w, 0); sctx.scale(-1, 1); }
-    sctx.drawImage(video, (w - dw) / 2, (h - dh) / 2, dw, dh);
-    sctx.restore();
-    return true;
-  }
-
-  let last = performance.now(), frames = 0, fps = 0;
-
-  function frame(t) {
-    requestAnimationFrame(frame);
-    if (document.body.classList.contains("normal")) return;
-
-    const dpr = out.width / innerWidth;
-    const ch = cellPx * dpr;
-    const cw = ch * CHAR_ASPECT;
-    const cols = Math.max(8, Math.floor(out.width / cw));
-    const rows = Math.max(8, Math.floor(out.height / ch));
-    if (small.width !== cols || small.height !== rows) { small.width = cols; small.height = rows; }
-
-    if (demo || !drawCover(cols, rows)) drawDemo(t, cols, rows);
-
-    const px = sctx.getImageData(0, 0, cols, rows).data;
-
-    // Niveles automáticos: estira el contraste entre los percentiles 2 y 98
-    const lum = new Float32Array(cols * rows);
-    const hist = new Uint32Array(256);
-    for (let i = 0, j = 0; j < lum.length; i += 4, j++) {
-      const y = (px[i] * 0.299 + px[i + 1] * 0.587 + px[i + 2] * 0.114) | 0;
-      lum[j] = y; hist[y]++;
+  function sceneHome() {
+    show("s-home");
+    $("#s-home").classList.add("zoom");
+    const grid = $("#icons");
+    grid.innerHTML = "";
+    for (const [name, glyph, err] of ICONS) {
+      const b = document.createElement("button");
+      b.className = "icon" + (err ? "" : " live");
+      b.innerHTML = `<div class="tile">${glyph}</div><span>${name}</span>`;
+      b.onclick = () => {
+        if (!err) {
+          if (!homeClean) return toast("<b>¿code_cam?</b> Límpiala un poco más, que no se ve nada.");
+          return sceneNick();
+        }
+        toast(`<b>${name}:</b> ${err}`);
+      };
+      grid.appendChild(b);
     }
-    let lo = 0, hi = 255, acc = 0;
-    const n = lum.length;
-    for (let v = 0; v < 256; v++) { acc += hist[v]; if (acc > n * 0.02) { lo = v; break; } }
-    acc = 0;
-    for (let v = 255; v >= 0; v--) { acc += hist[v]; if (acc > n * 0.02) { hi = v; break; } }
-    const range = Math.max(24, hi - lo);
+    requestAnimationFrame(initSmudge);
+  }
 
-    const ramp = RAMPS[rampIdx];
-    const rl = ramp.length - 1;
+  function initSmudge() {
+    const cv = $("#smudge");
+    const dpr = Math.min(devicePixelRatio || 1, 2);
+    cv.width = cv.clientWidth * dpr; cv.height = cv.clientHeight * dpr;
+    const ctx = cv.getContext("2d");
+    const W = cv.width, H = cv.height;
+    ctx.fillStyle = "rgba(48,38,24,.55)";
+    ctx.fillRect(0, 0, W, H);
+    for (let i = 0; i < 34; i++) {
+      const x = Math.random() * W, y = Math.random() * H, r = (30 + Math.random() * 90) * dpr;
+      const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+      g.addColorStop(0, `rgba(${60 + Math.random() * 30},${45 + Math.random() * 20},25,.9)`);
+      g.addColorStop(1, "rgba(50,40,25,0)");
+      ctx.fillStyle = g; ctx.fillRect(x - r, y - r, r * 2, r * 2);
+    }
+    // huellas de dedos
+    ctx.strokeStyle = "rgba(120,100,70,.35)"; ctx.lineWidth = 1.2 * dpr;
+    for (let k = 0; k < 6; k++) {
+      const x = Math.random() * W, y = Math.random() * H;
+      for (let j = 1; j < 9; j++) { ctx.beginPath(); ctx.ellipse(x, y, j * 3 * dpr, j * 4 * dpr, 0.4, 0, Math.PI * 2); ctx.stroke(); }
+    }
 
-    ctx.fillStyle = "#000";
-    ctx.fillRect(0, 0, out.width, out.height);
-    ctx.font = `${ch}px "DejaVu Sans Mono", Menlo, Consolas, monospace`;
-    ctx.textBaseline = "top";
-    ctx.fillStyle = "#39ff6a";
+    const dirt = () => {
+      const d = ctx.getImageData(0, 0, W, H).data;
+      let n = 0, s = 0;
+      for (let i = 3; i < d.length; i += 4 * 37) { s++; if (d[i] > 40) n++; }
+      return n / s;
+    };
+    const start = dirt();
+    let last = null, checkT = 0;
+    ctx.globalCompositeOperation = "destination-out";
+    ctx.strokeStyle = "#000";
+    ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.lineWidth = 54 * dpr;
 
-    const offX = (out.width - cols * cw) / 2;
-    const offY = (out.height - rows * ch) / 2;
-    for (let r = 0; r < rows; r++) {
-      let line = "";
-      for (let c = 0; c < cols; c++) {
-        let v = (lum[r * cols + c] - lo) / range;
-        v = v < 0 ? 0 : v > 1 ? 1 : v;
-        line += ramp[Math.round(v * rl)];
+    const pos = (e) => { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) * dpr, (e.clientY - r.top) * dpr]; };
+    cv.onpointerdown = (e) => { cv.setPointerCapture(e.pointerId); last = pos(e); };
+    cv.onpointerup = cv.onpointercancel = () => { last = null; if (dirt() < start * 0.45) finishClean(cv, ctx); };
+    cv.onpointermove = (e) => {
+      if (!last) return;
+      const p = pos(e);
+      ctx.beginPath(); ctx.moveTo(...last); ctx.lineTo(...p); ctx.stroke();
+      last = p;
+      const now = performance.now();
+      if (now - checkT > 300) {
+        checkT = now;
+        if (dirt() < start * 0.45) finishClean(cv, ctx);
       }
-      // fillText con maxWidth fuerza la rejilla aunque la fuente no sea exactamente 0.6
-      ctx.fillText(line, offX, offY + r * ch, cols * cw);
-    }
-
-    frames++;
-    if (t - last > 1000) { fps = frames; frames = 0; last = t; stats.textContent = `${cols}×${rows} · ${fps} fps`; }
+    };
   }
 
-  // Controles
-  document.getElementById("btnMode").onclick = (e) => {
-    const normal = document.body.classList.toggle("normal");
-    e.target.textContent = normal ? "code_cam" : "cámara normal";
+  function finishClean(cv, ctx) {
+    if (homeClean) return;
+    homeClean = true;
+    ctx.globalCompositeOperation = "source-over";
+    ctx.clearRect(0, 0, cv.width, cv.height);
+    cv.classList.add("clean");
+    $("#home-hint").textContent = "Las grietas no se van. Una sola app parece viva.";
+  }
+
+  // ---------- 3. Nickname ----------
+  const COMMON_NAMES = ["maria", "maría", "jose", "josé", "juan", "ana", "luis", "carlos", "laura", "david", "antonio",
+    "manuel", "francisco", "javier", "carmen", "lucia", "lucía", "pablo", "sara", "marta", "pedro", "miguel", "sergio",
+    "elena", "paula", "alex", "alejandro", "daniel", "jorge", "raquel", "cristina", "isabel", "marc", "jordi", "john", "mary"];
+  let nickWarned = false;
+
+  async function sceneNick() {
+    show("s-nick");
+    await type($("#nick-boot"),
+      "NarthexOS v0.3 (dañado)\n> comprobando hardware... 41% roto\n> usuario anterior: ████████\n> nuevo usuario detectado\n\nElige un nickname.\nConsejo: que no sea el real.", 22);
+    $("#nick-form").hidden = false;
+    $("#nick").focus();
+  }
+
+  function looksReal(v) {
+    return /^[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+\s+[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+/.test(v) || COMMON_NAMES.includes(v.toLowerCase());
+  }
+
+  $("#nick-form").onsubmit = (e) => {
+    e.preventDefault();
+    const v = $("#nick").value.trim();
+    const warn = $("#nick-warn");
+    if (!v) { warn.textContent = "Hasta los fantasmas tienen nombre. Escribe algo."; warn.hidden = false; return; }
+    if (looksReal(v) && !nickWarned) {
+      nickWarned = true;
+      warn.textContent = "Eso huele a nombre real. Primera lección de hacker: nunca le des tu nombre a una máquina. Ni siquiera a esta.";
+      warn.hidden = false; $("#nick-force").hidden = false;
+      return;
+    }
+    acceptNick(v);
   };
-  document.getElementById("btnMinus").onclick = () => { cellPx = Math.max(CELL_MIN, cellPx - 2); };
-  document.getElementById("btnPlus").onclick = () => { cellPx = Math.min(CELL_MAX, cellPx + 2); };
-  document.getElementById("btnRamp").onclick = () => { rampIdx = (rampIdx + 1) % RAMPS.length; };
-  document.getElementById("btnFlip").onclick = async () => {
-    if (demo) return;
-    facing = facing === "environment" ? "user" : "environment";
-    try { await startCamera(); } catch (e) { console.warn(e); }
+  $("#nick-force").onclick = () => acceptNick($("#nick").value.trim() || "anónimo");
+
+  function acceptNick(v) {
+    state.nick = v || "anónimo";
+    $("#nick").blur();
+    sceneToe();
+  }
+
+  // ---------- 4. Huella del pie ----------
+  let toePhase = "idle";   // idle | alarm | joke
+  let bigTouch = false;
+
+  function sceneToe() {
+    show("s-toe");
+    $("#toe-sub").textContent = `Hola, ${state.nick}. Por tu seguridad, escanea tu huella.`;
+  }
+
+  // Un pie toca con mucha superficie o en varios puntos a la vez. Es teatro: no se guarda nada.
+  $("#toe").addEventListener("touchstart", (e) => {
+    const t = e.touches;
+    let maxR = 0;
+    for (const p of t) maxR = Math.max(maxR, p.radiusX || 0, p.radiusY || 0);
+    bigTouch = t.length >= 3 || maxR > 28;
+  }, { passive: true });
+
+  $("#toe").addEventListener("pointerdown", (e) => {
+    e.preventDefault();
+    const area = (e.width || 0) * (e.height || 0);
+    if (bigTouch || area > 2500) return show("s-reward");
+    if (toePhase === "idle") return startAlarm();
+    if (toePhase === "alarm") dodge();
+  });
+  $("#toe").addEventListener("pointerenter", (e) => {
+    if (e.pointerType === "mouse" && toePhase === "alarm") dodge();
+  });
+
+  function dodge() {
+    const area = $("#toe-area").getBoundingClientRect();
+    const x = 20 + Math.random() * 60, y = 20 + Math.random() * 60;
+    const toe = $("#toe");
+    toe.style.left = x + "%"; toe.style.top = y + "%";
+    if (area.height < 200) toe.style.top = "50%";
+  }
+
+  async function startAlarm() {
+    toePhase = "alarm";
+    const s = $("#s-toe");
+    s.classList.add("alarm");
+    $("#toe-title").textContent = "FINGER DETECTED";
+    $("#toe-sub").textContent = "Esto no es un pie. Iniciando protocolo de autodestrucción.";
+    $("#toe-label").hidden = true;
+    const cd = $("#countdown");
+    cd.hidden = false;
+    dodge();
+    for (let i = 10; i > 0; i--) { cd.textContent = i; await sleep(1000); }
+    cd.hidden = true;
+    s.classList.remove("alarm");
+    toePhase = "joke";
+    const toe = $("#toe"); toe.style.left = "50%"; toe.style.top = "45%";
+    $("#toe-title").textContent = ":)";
+    $("#toe-sub").textContent = "";
+    $("#toe-joke").textContent = "Era broma. NarthexOS no quiere tus huellas. Todavía. Si te atreves con el pie de verdad, el botón sigue ahí.";
+    $("#toe-label").hidden = false;
+    $("#toe-after").hidden = false;
+  }
+  $("#toe-next").onclick = scenePerm;
+  $("#reward-next").onclick = scenePerm;
+
+  // ---------- 5. Permiso de cámara ----------
+  function scenePerm() { show("s-perm"); }
+
+  $("#perm-mem").onchange = async (e) => {
+    if (!e.target.checked) return;
+    await sleep(500);
+    e.target.checked = false;
+    $("#perm-mem-msg").hidden = false;
+  };
+  $("#perm-no").onclick = () => {
+    $("#perm-status").textContent = "Sin cámara no hay code_cam. Puedes cambiar de opinión, o seguir con una simulación.";
+    $("#perm-demo").hidden = false;
+  };
+  $("#perm-demo").onclick = () => startCam(false);
+  $("#perm-yes").onclick = () => {
+    // iOS pide permiso para el acelerómetro y tiene que ser dentro de este toque
+    let motion = null;
+    if (typeof DeviceMotionEvent !== "undefined" && DeviceMotionEvent.requestPermission) {
+      motion = DeviceMotionEvent.requestPermission().catch(() => "denied");
+    }
+    $("#perm-status").textContent = "Ahora tu teléfono te pregunta lo mismo, pero en serio.";
+    startCam(true, motion);
   };
 
-  document.getElementById("btnStart").onclick = async () => {
-    const err = document.getElementById("err");
-    try {
-      if (!navigator.mediaDevices?.getUserMedia) throw new Error("Este navegador no da acceso a la cámara (¿falta HTTPS?).");
-      await startCamera();
-    } catch (e) {
-      err.textContent = `${e.message || e} — modo demo sin cámara.`;
-      demo = true;
-      await new Promise(r => setTimeout(r, 1500));
+  // ---------- 6. code_cam ----------
+  const video = $("#cam-video");
+  const cam = AsciiCam($("#cam-canvas"), video);
+  let camPhase = "intro";   // intro | arrow | body
+  let steps = 0;
+  let notebookAt = null;    // posición del cuaderno en px CSS dentro del canvas
+
+  async function startCam(real, motionP) {
+    if (real) {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false });
+        video.srcObject = stream;
+        await video.play();
+        const s = stream.getVideoTracks()[0].getSettings();
+        cam.mirror = s.facingMode ? s.facingMode === "user" : true;
+      } catch (e) {
+        $("#perm-status").textContent = "El teléfono ha dicho que no (o no hay cámara). Sigue con una simulación.";
+        $("#perm-demo").hidden = false;
+        return;
+      }
+      if ((await motionP) !== "denied") listenSteps();
+    } else {
+      cam.demo = true;
     }
-    document.getElementById("gate").style.display = "none";
-    requestAnimationFrame(frame);
+    show("s-cam");
+    requestAnimationFrame(loop);
+    runCam();
+  }
+
+  function loop(t) {
+    if ($("#s-cam").hidden) return;
+    requestAnimationFrame(loop);
+    if (!$("#s-cam").classList.contains("normal")) cam.render(t);
+  }
+
+  // Cuenta pasos con el acelerómetro: picos de aceleración separados al menos 350 ms
+  function listenSteps() {
+    let avg = 9.8, lastStep = 0;
+    addEventListener("devicemotion", (e) => {
+      const a = e.accelerationIncludingGravity;
+      if (!a || a.x == null) return;
+      const m = Math.hypot(a.x, a.y, a.z);
+      avg = avg * 0.95 + m * 0.05;
+      const now = performance.now();
+      if (camPhase === "arrow" && m - avg > 2.2 && now - lastStep > 350) {
+        lastStep = now; steps++; updateSignal();
+      }
+    });
+  }
+
+  const STEPS_NEEDED = 4;
+  function updateSignal() {
+    const s = Math.min(steps, STEPS_NEEDED);
+    $("#signal").textContent = "señal " + "▮".repeat(s) + "▯".repeat(STEPS_NEEDED - s);
+    if (steps >= STEPS_NEEDED && camPhase === "arrow") toBody();
+  }
+
+  function setMsg(text, action) {
+    $("#cam-text").textContent = text;
+    const b = $("#cam-action");
+    if (action) { b.textContent = action[0]; b.onclick = action[1]; b.hidden = false; } else b.hidden = true;
+  }
+
+  async function runCam() {
+    camPhase = "intro";
+    cam.overlay = null;
+    setMsg("Esto es tu casa. Así la ve el código.");
+    await sleep(3200);
+    camPhase = "arrow";
+    cam.overlay = arrowOverlay;
+    $("#signal").hidden = false; updateSignal();
+    setMsg("Sigue la señal: dos o tres pasos hacia delante. Mira por dónde pisas, no la pantalla.");
+    await sleep(cam.demo ? 2500 : 8000);
+    if (camPhase === "arrow") setMsg($("#cam-text").textContent, ["ya he avanzado", toBody]);
+  }
+
+  async function toBody() {
+    if (camPhase === "body") return;
+    camPhase = "body";
+    $("#signal").hidden = true;
+    cam.overlay = bodyOverlay;
+    setMsg("Una silueta de tiza en el suelo. Solo existe en el código.");
+    await sleep(3500);
+    setMsg("No huele a muerto.");
+    await sleep(2500);
+    setMsg("Donde estaban las manos hay algo.", ["coger la libreta", sceneNotes]);
+  }
+
+  $("#cam-toggle").onclick = (e) => {
+    const s = $("#s-cam");
+    const normal = s.classList.toggle("normal");
+    e.target.textContent = normal ? "code_cam" : "cámara normal";
+    if (normal && camPhase !== "intro") $("#cam-text").textContent = "Aquí no hay nada. Hay cosas que solo existen en el código.";
   };
+
+  $("#cam-canvas").addEventListener("pointerdown", (e) => {
+    if (camPhase !== "body" || !notebookAt) return;
+    const r = e.currentTarget.getBoundingClientRect();
+    if (Math.hypot(e.clientX - r.left - notebookAt[0], e.clientY - r.top - notebookAt[1]) < 60) sceneNotes();
+  });
+
+  // Flecha rellena que sube y baja despacio (sin parpadeos)
+  function arrowOverlay(g, t) {
+    const out = [];
+    const cx = g.cols / 2;
+    const h = Math.round(g.rows * 0.32);
+    const top = Math.round(g.rows * 0.2 + Math.sin(t / 600) * 1.5);
+    const head = Math.round(h * 0.45);
+    const maxHalf = (h * g.ch * 0.35) / g.cw;   // ancho total ≈ 70% del alto, en columnas
+    for (let i = 0; i < h; i++) {
+      const half = i < head ? maxHalf * (i + 1) / head : maxHalf * 0.3;
+      for (let c = Math.round(cx - half); c <= Math.round(cx + half); c++) {
+        out.push({ r: top + i, c, ch: i < head ? "^" : "|", color: "#eaffef" });
+      }
+    }
+    return out;
+  }
+
+  // Silueta de tiza: cuerpo hecho de cápsulas, en perspectiva de suelo; se dibuja solo el borde
+  function segDist(px, py, ax, ay, bx, by) {
+    const dx = bx - ax, dy = by - ay;
+    if (!dx && !dy) return Math.hypot(px - ax, py - ay);
+    const k = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / (dx * dx + dy * dy)));
+    return Math.hypot(px - ax - k * dx, py - ay - k * dy);
+  }
+  const BODY = [
+    [0, 0.07, 0, 0.07, 0.08],           // cabeza
+    [0, 0.13, 0, 0.2, 0.03],            // cuello
+    [-0.06, 0.23, 0.06, 0.23, 0.06],    // hombros
+    [0, 0.25, 0, 0.5, 0.095],           // tronco
+    [-0.11, 0.24, -0.32, 0.04, 0.04],   // brazo izquierdo, levantado
+    [0.11, 0.24, 0.27, 0.42, 0.04],     // brazo derecho, abajo
+    [-0.05, 0.5, -0.16, 0.97, 0.05],    // piernas
+    [0.05, 0.5, 0.13, 0.98, 0.05],
+  ];
+  const insideBody = (x, y) => BODY.some(([ax, ay, bx, by, r]) => segDist(x, y, ax, ay, bx, by) < r);
+
+  function bodyOverlay(g) {
+    const W = g.cols * g.cw, H = g.rows * g.ch;
+    const size = Math.min(H * 0.6, W * 1.15);
+    const top = H * 0.24;
+    const persp = (y) => 0.75 + 0.35 * y;     // lo lejano (arriba) más estrecho
+    const toBody = (c, r) => {
+      const y = ((r + 0.5) * g.ch - top) / size;
+      const x = ((c + 0.5) * g.cw - W / 2) / size / persp(y);
+      return [x, y];
+    };
+    const inside = new Uint8Array(g.cols * g.rows);
+    for (let r = 0; r < g.rows; r++) for (let c = 0; c < g.cols; c++) {
+      const [x, y] = toBody(c, r);
+      if (y > -0.05 && y < 1.05 && insideBody(x, y)) inside[r * g.cols + c] = 1;
+    }
+    const at = (c, r) => c >= 0 && r >= 0 && c < g.cols && r < g.rows && inside[r * g.cols + c];
+    const out = [];
+    for (let r = 0; r < g.rows; r++) for (let c = 0; c < g.cols; c++) {
+      if (!at(c, r)) continue;
+      const U = !at(c, r - 1), D = !at(c, r + 1), L = !at(c - 1, r), R = !at(c + 1, r);
+      // el interior tapa la cámara: la silueta se lee como un hueco con borde de tiza
+      if (!(U || D || L || R)) { out.push({ r, c, ch: " " }); continue; }
+      let ch;
+      if ((U || D) && !(L || R)) ch = U ? "-" : "_";
+      else if ((L || R) && !(U || D)) ch = "|";
+      else if ((U && R) || (D && L)) ch = "\\";
+      else ch = "/";
+      out.push({ r, c, ch, color: "#f2f2ee" });
+    }
+    // la libreta, donde estaba la mano izquierda
+    const hy = 0.01, hx = -0.34;
+    const nr = Math.round((hy * size + top) / g.ch - 0.5);
+    const nc = Math.round((hx * persp(hy) * size + W / 2) / g.cw - 0.5) - 1;
+    for (const [i, ch] of [..."[≡]"].entries()) out.push({ r: nr, c: nc + i, ch, color: "#ffb347" });
+    notebookAt = [g.offX + (nc + 1.5) * g.cw, g.offY + (nr + 0.5) * g.ch];
+    return out;
+  }
+
+  // ---------- 7. Libreta ----------
+  const NOTES = () => [
+    `Si estás leyendo esto, has encontrado el fuego. O el fuego te ha encontrado a ti.\n\nHola, ${state.nick}. Buen nombre. Falso, espero.`,
+    "Lo que ves por la code_cam es el mundo como lo ven ellos: datos.\n\nTu sofá es un dato. Tu gato es un dato con bigotes.\n\nLos Dioses lo ven así todo el tiempo. Ahora tú también.",
+    "Los Dioses son cinco.\n\nOlimpo te mira.\nAsgard te protege de cosas que vende Asgard.\nHeliópolis te da de comer y luego te cura.\nBabel te presta para pagar a los otros cuatro.\nHefesto lo fabrica todo y nadie le da las gracias.",
+    "Reglas para no arder:\n\n1. No aceptes cookies de desconocidos.\n2. Lee la letra pequeña. Ahí esconden lo bueno y lo malo.\n3. Si un botón dice «No, prefiero que me hackeen», es una trampa. Y un insulto.",
+    "Este teléfono está roto. Yo también, un poco. Lo arreglaremos por partes.\n\nEmpieza por el Correo. La contraseña está donde nadie mira.\n\n— P.\n\nPD: si alguien te dice que estoy muerto, pregúntale cómo lo sabe.",
+    "FIN DE LA INTRO\n\nCapítulo 1: El fuego.\nPróximamente.\n\n(Esto es un prototipo. Si te ha gustado, díselo a quien te pasó el enlace.)",
+  ];
+  let page = 0;
+
+  function sceneNotes() {
+    show("s-notes");
+    page = 0; renderNote();
+  }
+  function renderNote() {
+    const notes = NOTES();
+    $("#note").textContent = notes[page];
+    $("#note-page").textContent = `${page + 1} / ${notes.length}`;
+    $("#note-prev").hidden = page === 0;
+    $("#note-next").textContent = page === notes.length - 1 ? "volver a empezar" : "pasar página";
+  }
+  $("#note-prev").onclick = () => { page = Math.max(0, page - 1); renderNote(); };
+  $("#note-next").onclick = () => {
+    if (page === NOTES().length - 1) return location.reload();
+    page++; renderNote();
+  };
+
+  // Atajo para probar: index.html#cam salta a la code_cam en simulación, #toe a la huella, etc.
+  const jump = { "#home": sceneHome, "#nick": sceneNick, "#toe": () => { state.nick = "test"; sceneToe(); },
+    "#perm": scenePerm, "#cam": () => { state.nick = "test"; startCam(false); }, "#notes": () => { state.nick = "test"; sceneNotes(); } }[location.hash];
+  (jump || sceneFound)();
 })();
 </script>
 </body>
