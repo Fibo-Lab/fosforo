@@ -1,0 +1,608 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Narthex · laboratorio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=VT323&display=swap">
+<style>
+  /* Banco de pruebas: el móvil a la izquierda (o a pantalla completa en el teléfono) y el panel de control al lado o abajo. */
+  :root {
+    color-scheme: dark;
+    --bg: #050806;
+    --panel: #0c120e;
+    --line: #1d2a21;
+    --fg: #39ff6a;
+    --fg-dim: #1f7a3c;
+    --ink: #d6ffe0;
+    --amber: #ffb347;
+    --red: #ff3b3b;
+    --display: "VT323", "DejaVu Sans Mono", Menlo, monospace;
+    --body: "IBM Plex Mono", "DejaVu Sans Mono", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; background: var(--bg); color: var(--ink); font-family: var(--body); }
+  body { display: flex; gap: 28px; align-items: center; justify-content: center; overflow: hidden; }
+  [hidden] { display: none !important; }
+  button { font: inherit; cursor: pointer; }
+
+  /* ---------- El móvil ---------- */
+  #phone { position: relative; width: 100%; height: 100%; overflow: hidden; background: #000; flex: none; }
+  @media (min-width: 900px) and (min-height: 700px) {
+    #phone { width: 390px; height: min(820px, 94vh); border-radius: 38px;
+      box-shadow: 0 0 0 10px #111, 0 0 0 11px #2a2a2a, 0 30px 80px rgba(0,0,0,.6); }
+  }
+  #content { position: absolute; inset: 0; transition: filter .6s ease;
+    background: radial-gradient(120% 70% at 30% 10%, #1b2a3a 0%, #0c1218 55%, #07090b 100%); }
+  #content.glitch { transform: translate(9px, -3px) skewX(-5deg); }
+  .status { display: flex; justify-content: space-between; font-size: 12px; opacity: .85;
+    padding: calc(14px + env(safe-area-inset-top, 0px)) 22px 0; font-variant-numeric: tabular-nums; }
+  .status .batt.low { color: var(--red); }
+  #icons { display: grid; grid-template-columns: repeat(3, 1fr); gap: 26px 12px; padding: 48px 26px 0; }
+  .icon { display: flex; flex-direction: column; align-items: center; gap: 8px; font-size: 11px; }
+  .tile { width: 62px; height: 62px; border-radius: 16px; display: grid; place-items: center;
+    font-size: 20px; font-weight: 600; color: #e9eef3; }
+  #sample { margin: 34px 26px 0; padding: 14px; border-radius: 12px; background: rgba(255,255,255,.06); font-size: 13px; line-height: 1.5; }
+  #sample b { color: var(--fg); }
+
+  /* Versiones de NarthexOS: un fondo y un estilo de iconos por actualización (una por capítulo) */
+  #phone[data-os="fuego"] #content { background:
+      radial-gradient(90% 45% at 50% 108%, #ff7a1a 0%, #a8320c 28%, #3a0d05 55%, transparent 75%),
+      repeating-linear-gradient(0deg, rgba(255,140,40,.05) 0 1px, transparent 1px 4px), #0b0503; }
+  #phone[data-os="fuego"] .tile { background: rgba(0,0,0,.55) !important; color: var(--amber); border-radius: 4px;
+    border: 1px solid var(--amber); box-shadow: 0 0 14px rgba(255,140,40,.25); font-family: var(--body); }
+  #phone[data-os="fuego"] .icon span { color: #ffd9a0; }
+  #phone[data-os="eter"] #content { background:
+      repeating-radial-gradient(circle at 50% 30%, rgba(80,220,255,.10) 0 1px, transparent 1px 22px),
+      radial-gradient(120% 80% at 50% 0%, #1b1440 0%, #0a0820 60%, #04030c 100%); }
+  #phone[data-os="eter"] .tile { background: rgba(10,8,32,.7) !important; color: #7ff0ff; border-radius: 50%;
+    border: 1px solid rgba(127,240,255,.6); box-shadow: inset 0 0 18px rgba(127,240,255,.2); }
+  #phone[data-os="eter"] .icon span { color: #bfefff; }
+
+  /* capas de daño, de abajo arriba */
+  .layer { position: absolute; inset: 0; pointer-events: none; }
+  #bleed { background: radial-gradient(60% 40% at 100% 100%, rgba(255,240,200,.18), transparent 70%),
+                      radial-gradient(40% 30% at 0% 0%, rgba(255,240,200,.10), transparent 70%); opacity: 0; transition: opacity .6s; }
+  #bands { opacity: 0; transition: opacity .6s;
+    background: linear-gradient(transparent 0 30%, rgba(255,0,180,.35) 30% 31.5%, transparent 31.5% 62%,
+      rgba(0,255,220,.25) 62% 62.8%, transparent 62.8% 84%, rgba(255,255,255,.18) 84% 84.4%, transparent 84.4%);
+    background-size: 100% 200%; animation: drift 14s linear infinite; }
+  @keyframes drift { from { background-position: 0 0 } to { background-position: 0 -200% } }
+  #dead i { position: absolute; width: 3px; height: 3px; }
+  #cracks { width: 100%; height: 100%; transition: opacity .6s; }
+  #smudge { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; }
+  #alarm { background: #ff1a1a; opacity: 0; mix-blend-mode: multiply; }
+  #alarm.on { animation: alarm 1s ease-in-out infinite; }   /* 1 por segundo: bien por debajo de 3 */
+  @keyframes alarm { 0%, 100% { opacity: 0 } 50% { opacity: .75 } }
+  #blackout { background: #000; opacity: 0; transition: opacity .5s; display: grid; place-items: center;
+    font-family: var(--display); font-size: 30px; color: var(--fg); }
+  #blackout.on { opacity: 1; pointer-events: auto; }
+  #toast { position: absolute; left: 18px; right: 18px; bottom: calc(40px + env(safe-area-inset-bottom, 0px));
+    background: #000; border: 1px solid var(--red); padding: 12px 14px; font-size: 13px; line-height: 1.45; transform: skewX(-3deg); }
+  #toast b { color: var(--red); }
+  #ad { position: absolute; left: 22px; right: 22px; top: 30%; background: #f6e7b0; color: #3a2400; padding: 18px 16px 16px;
+    border: 4px double #a0522d; font-family: var(--display); text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,.6); }
+  #ad h2 { font-size: 36px; font-weight: 400; line-height: 1; }
+  #ad p { font-size: 22px; margin-top: 6px; }
+  #ad button { position: absolute; top: 2px; right: 4px; background: none; border: 0; color: #3a2400; font-size: 11px; opacity: .45; padding: 4px; }
+
+  /* ---------- Panel ---------- */
+  #panel { width: 360px; max-height: 94vh; overflow-y: auto; background: var(--panel); border: 1px solid var(--line);
+    padding: 18px; display: flex; flex-direction: column; gap: 18px; }
+  #panel h1 { font-family: var(--display); font-weight: 400; font-size: 32px; color: var(--fg); line-height: 1; }
+  #panel h2 { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--amber); margin-bottom: 8px; }
+  .ctl { display: grid; grid-template-columns: 78px 1fr 104px; gap: 8px; align-items: center; font-size: 13px; margin-bottom: 6px; }
+  .ctl output { color: var(--fg); font-size: 12px; }
+  input[type=range] { width: 100%; accent-color: var(--fg); }
+  .btns { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .btn { color: var(--fg); background: transparent; border: 1px solid var(--fg-dim); padding: 10px 6px; min-height: 42px; font-size: 13px; }
+  .btn:active, .btn.on { background: var(--fg-dim); color: var(--ink); }
+  .btn:focus-visible, input:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+  .check { display: flex; gap: 8px; align-items: center; font-size: 13px; }
+  .check input { accent-color: var(--fg); width: 18px; height: 18px; }
+  .note { font-size: 11px; line-height: 1.5; opacity: .6; }
+  #tier-desc { font-size: 12px; line-height: 1.5; color: var(--ink); opacity: .8; min-height: 3em; }
+  #lab-toggle { display: none; }
+
+  /* En el teléfono: el móvil ocupa la pantalla y el panel es una hoja que sube desde abajo */
+  @media (max-width: 899px), (max-height: 699px) {
+    body { display: block; }
+    #panel { position: fixed; left: 0; right: 0; bottom: 0; width: auto; max-height: 62vh; z-index: 20;
+      border-width: 1px 0 0; padding: 16px max(16px, env(safe-area-inset-right, 0px)) calc(16px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+      transform: translateY(105%); transition: transform .3s ease; }
+    #panel.open { transform: none; }
+    #lab-toggle { display: block; position: fixed; z-index: 21; right: max(14px, env(safe-area-inset-right, 0px));
+      bottom: calc(14px + env(safe-area-inset-bottom, 0px)); background: #000c; color: var(--fg); border: 1px solid var(--fg);
+      padding: 10px 14px; font-size: 13px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    #bands, #alarm.on { animation: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <!-- Aberración cromática: separa rojo y azul en horizontal -->
+  <filter id="chroma" color-interpolation-filters="sRGB" x="-5%" y="0" width="110%" height="100%">
+    <feColorMatrix in="SourceGraphic" type="matrix" values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0" result="r"/>
+    <feOffset in="r" id="chroma-r" dx="0" dy="0" result="r2"/>
+    <feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0" result="g"/>
+    <feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0" result="b"/>
+    <feOffset in="b" id="chroma-b" dx="0" dy="0" result="b2"/>
+    <feBlend in="r2" in2="g" mode="screen" result="rg"/>
+    <feBlend in="rg" in2="b2" mode="screen"/>
+  </filter>
+</svg>
+
+<div id="phone" data-os="roto">
+  <div id="content">
+    <div class="status"><span id="clock">21:47</span><span>Éter ▂▄▆</span><span class="batt" id="batt">3%</span></div>
+    <div id="icons"></div>
+    <div id="sample">Texto de prueba. <b>NarthexOS</b> te desea un día sin anuncios. Los colores deberían ser verde, ámbar y rojo:
+      <span style="color:var(--amber)">ámbar</span>, <span style="color:var(--red)">rojo</span>.</div>
+  </div>
+  <div class="layer" id="bleed"></div>
+  <div class="layer" id="bands"></div>
+  <div class="layer" id="dead"></div>
+  <svg class="layer" id="cracks" viewBox="0 0 100 200" preserveAspectRatio="none" aria-hidden="true">
+    <g fill="none" stroke="rgba(255,255,255,.55)" stroke-width="1.1">
+      <polyline vector-effect="non-scaling-stroke" points="72,58 60,40 55,22 48,0"/>
+      <polyline vector-effect="non-scaling-stroke" points="72,58 88,44 100,40"/>
+      <polyline vector-effect="non-scaling-stroke" points="72,58 81,80 86,104 100,118"/>
+      <polyline vector-effect="non-scaling-stroke" points="72,58 58,70 40,76 22,92 0,98"/>
+      <polyline vector-effect="non-scaling-stroke" points="72,58 66,92 70,130 62,160 66,200"/>
+      <polyline vector-effect="non-scaling-stroke" points="72,58 92,62 100,70"/>
+      <polyline vector-effect="non-scaling-stroke" points="60,40 46,46 30,40"/>
+      <polyline vector-effect="non-scaling-stroke" points="81,80 70,86 66,92"/>
+      <polyline vector-effect="non-scaling-stroke" points="40,76 44,90 38,108"/>
+      <polygon vector-effect="non-scaling-stroke" points="70,54 75,55 74,61 69,60" fill="rgba(255,255,255,.25)"/>
+    </g>
+  </svg>
+  <canvas id="smudge"></canvas>
+  <div class="layer" id="alarm"></div>
+  <div id="ad" hidden><button id="ad-close" aria-label="cerrar anuncio">cerrar</button>
+    <h2>CONSERVAS MOMIA</h2><p>Duran más que tú.</p><p style="font-size:16px">Una marca de Heliópolis</p></div>
+  <div id="toast" hidden></div>
+  <div class="layer" id="blackout"></div>
+</div>
+
+<button id="lab-toggle">panel</button>
+
+<aside id="panel">
+  <h1>Laboratorio</h1>
+
+  <section>
+    <h2>Estado del móvil</h2>
+    <div class="ctl"><label for="t-all">General</label><input type="range" id="t-all" min="0" max="4" step="1" value="0"><output id="o-all"></output></div>
+    <div class="ctl"><label for="t-screen">Pantalla</label><input type="range" id="t-screen" min="0" max="4" step="1" value="0"><output id="o-screen"></output></div>
+    <div class="ctl"><label for="t-batt">Batería</label><input type="range" id="t-batt" min="0" max="4" step="1" value="0"><output id="o-batt"></output></div>
+    <div class="ctl"><label for="t-spk">Altavoz</label><input type="range" id="t-spk" min="0" max="4" step="1" value="0"><output id="o-spk"></output></div>
+    <p id="tier-desc"></p>
+    <label class="check"><input type="checkbox" id="auto" checked> fallos automáticos según el estado</label>
+  </section>
+
+  <section>
+    <h2>Versión de NarthexOS</h2>
+    <div class="btns" id="os-btns">
+      <button class="btn" data-os="roto">v0.3 · roto</button>
+      <button class="btn" data-os="fuego">v1 · fuego</button>
+      <button class="btn" data-os="eter">v2 · Éter</button>
+    </div>
+    <p class="note" style="margin-top:8px">Una actualización por capítulo: fondo e iconos nuevos. El capítulo 3 queda abierto.</p>
+  </section>
+
+  <section>
+    <h2>Sonidos</h2>
+    <div class="btns">
+      <button class="btn" data-snd="pitido">pitido</button>
+      <button class="btn" data-snd="alarma">alarma</button>
+      <button class="btn" data-snd="sirena">sirena</button>
+      <button class="btn" data-snd="pedo">pedo</button>
+      <button class="btn" data-snd="risa">risa</button>
+      <button class="btn" data-snd="aplauso">aplauso</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>Pantalla</h2>
+    <div class="btns">
+      <button class="btn" id="b-dirty">ensuciar</button>
+      <button class="btn" id="b-clean">limpiar</button>
+      <button class="btn" id="b-glitch">glitch</button>
+      <button class="btn" id="b-blackout">apagón</button>
+      <button class="btn" id="b-warn">aviso batería</button>
+      <button class="btn" id="b-alarmscreen">alarma visual</button>
+    </div>
+    <p class="note" style="margin-top:8px">Con la pantalla sucia, desliza el dedo sobre el móvil para limpiarla.</p>
+  </section>
+
+  <section>
+    <h2>Audio</h2>
+    <div class="ctl"><label for="vol">Volumen</label><input type="range" id="vol" min="0" max="1" step="0.05" value="0.5"><output id="o-vol"></output></div>
+    <label class="check"><input type="checkbox" id="mute"> silencio</label>
+  </section>
+
+  <p class="note">Todo el sonido se genera en el navegador, sin archivos. Los efectos visuales no cambian más de una vez por segundo (regla de epilepsia fotosensible).</p>
+</aside>
+
+<script>
+(() => {
+  const $ = (s) => document.querySelector(s);
+  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+  const rand = (a, b) => a + Math.random() * (b - a);
+
+  const TIERS = ["roto", "compatible", "refurbished", "original", "mejorado"];
+  const DESC = {
+    screen: ["Grietas, colores corridos, bandas y píxeles muertos.",
+             "Panel «compatible»: sin grietas, pero tinte raro, bandas y luz que se escapa por las esquinas.",
+             "Refurbished: algo amarillento, un píxel muerto.",
+             "Original de Hefesto: limpia.",
+             "Mejorada: más contraste y color que de fábrica."],
+    batt: ["El porcentaje miente, avisos constantes y apagones.",
+           "Se vacía deprisa y avisa a menudo.",
+           "Normal, con algún salto raro.",
+           "Normal.",
+           "Batería de Hades: no baja nunca."],
+    spk: ["Distorsión, ruido, cortes y pitidos sueltos.",
+          "Suena a lata.",
+          "Algo apagado.",
+          "Limpio.",
+          "Con graves de más. Hefesto no lo aprobaría."],
+  };
+  const tier = { screen: 0, batt: 0, spk: 0 };
+
+  // ---------- iconos de la pantalla de inicio ----------
+  const ICONS = [["Correo", "@", "#3d6fb6"], ["Mapas", "N", "#2f9a6a"], ["Éter", "~", "#7a4fc0"],
+    ["Archivos", "[]", "#c08a2f"], ["code_cam", "(o)", "#0d7a34"], ["Terminal", ">_", "#333d47"],
+    ["Cartera", "¤", "#b0402f"], ["Fotos", "#", "#d4567e"], ["Ajustes", "%", "#59636e"]];
+  for (const [name, glyph, color] of ICONS) {
+    const d = document.createElement("div");
+    d.className = "icon";
+    d.innerHTML = `<div class="tile" style="background:${color}">${glyph}</div><span>${name}</span>`;
+    $("#icons").appendChild(d);
+  }
+
+  // píxeles muertos en sitios fijos; se muestran más o menos según el estado
+  const DEAD = Array.from({ length: 6 }, (_, i) => {
+    const p = document.createElement("i");
+    p.style.left = rand(5, 95) + "%"; p.style.top = rand(5, 95) + "%";
+    p.style.background = i % 3 === 0 ? "#fff" : i % 3 === 1 ? "#0f0" : "#000";
+    $("#dead").appendChild(p);
+    return p;
+  });
+
+  // ---------- pantalla ----------
+  function applyScreen() {
+    const t = tier.screen;
+    const shift = [4, 2, 1, 0, 0][t];
+    $("#chroma-r").setAttribute("dx", shift);
+    $("#chroma-b").setAttribute("dx", -shift);
+    const color = [
+      "hue-rotate(28deg) saturate(1.7) contrast(1.15)",
+      "hue-rotate(-14deg) saturate(1.35) contrast(.95) brightness(1.05)",
+      "sepia(.22) saturate(.85)",
+      "none",
+      "contrast(1.08) saturate(1.2)",
+    ][t];
+    $("#content").style.filter = (shift ? "url(#chroma) " : "") + (color === "none" ? "" : color);
+    $("#cracks").style.opacity = t === 0 ? 1 : 0;
+    $("#bands").style.opacity = [0.9, 0.5, 0, 0, 0][t];
+    $("#bleed").style.opacity = [0.6, 1, 0.5, 0, 0][t];
+    const nDead = [6, 3, 1, 0, 0][t];
+    DEAD.forEach((p, i) => { p.hidden = i >= nDead; });
+  }
+
+  // Un único salto de imagen (no cuenta como parpadeo repetido)
+  let lastGlitch = 0;
+  async function glitch() {
+    const now = performance.now();
+    if (now - lastGlitch < 1500) return;
+    lastGlitch = now;
+    $("#content").classList.add("glitch");
+    await sleep(160);
+    $("#content").classList.remove("glitch");
+  }
+
+  // ---------- manchas (ensuciar / limpiar con el dedo) ----------
+  const cv = $("#smudge"), sctx = cv.getContext("2d");
+  let dpr = 1;
+  function fitSmudge() {
+    dpr = Math.min(devicePixelRatio || 1, 2);
+    const w = cv.clientWidth * dpr, h = cv.clientHeight * dpr;
+    if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
+  }
+  function dirty() {
+    fitSmudge();
+    const W = cv.width, H = cv.height;
+    sctx.globalCompositeOperation = "source-over";
+    sctx.fillStyle = "rgba(48,38,24,.45)";
+    sctx.fillRect(0, 0, W, H);
+    for (let i = 0; i < 30; i++) {
+      const x = rand(0, W), y = rand(0, H), r = rand(30, 110) * dpr;
+      const g = sctx.createRadialGradient(x, y, 0, x, y, r);
+      g.addColorStop(0, `rgba(${rand(55, 90) | 0},${rand(42, 62) | 0},25,.9)`);
+      g.addColorStop(1, "rgba(50,40,25,0)");
+      sctx.fillStyle = g; sctx.fillRect(x - r, y - r, r * 2, r * 2);
+    }
+    sctx.strokeStyle = "rgba(120,100,70,.35)"; sctx.lineWidth = 1.2 * dpr;
+    for (let k = 0; k < 6; k++) {
+      const x = rand(0, W), y = rand(0, H);
+      for (let j = 1; j < 9; j++) { sctx.beginPath(); sctx.ellipse(x, y, j * 3 * dpr, j * 4 * dpr, 0.4, 0, Math.PI * 2); sctx.stroke(); }
+    }
+  }
+  function cleanAll() { sctx.clearRect(0, 0, cv.width, cv.height); }
+  let last = null;
+  const pos = (e) => { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) * dpr, (e.clientY - r.top) * dpr]; };
+  cv.onpointerdown = (e) => { cv.setPointerCapture(e.pointerId); last = pos(e); };
+  cv.onpointerup = cv.onpointercancel = () => { last = null; };
+  cv.onpointermove = (e) => {
+    if (!last) return;
+    const p = pos(e);
+    sctx.globalCompositeOperation = "destination-out";
+    sctx.strokeStyle = "#000"; sctx.lineCap = "round"; sctx.lineWidth = 54 * dpr;
+    sctx.beginPath(); sctx.moveTo(...last); sctx.lineTo(...p); sctx.stroke();
+    last = p;
+  };
+
+  // ---------- batería ----------
+  let battery = 63;
+  let toastTimer = 0;
+  function toast(html, ms = 3000) {
+    const t = $("#toast");
+    t.innerHTML = html; t.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { t.hidden = true; }, ms);
+  }
+  const WARNINGS = [
+    "<b>Batería defectuosa.</b> Quedan 3%. O 80%. No lo sabemos.",
+    "<b>Batería:</b> temperatura 61 °C. No la uses de almohada.",
+    "<b>Batería hinchada.</b> Es la única cosa de este teléfono que ha crecido.",
+    "<b>Aviso:</b> esta batería no es original. Nada de esto es original.",
+  ];
+  const warn = () => toast(WARNINGS[(Math.random() * WARNINGS.length) | 0]);
+
+  function renderBattery() {
+    const b = $("#batt");
+    if (tier.batt === 4) { b.textContent = "∞"; b.classList.remove("low"); return; }
+    const shown = tier.batt === 0 ? [3, 1, 47, 12, 88, 0][(Math.random() * 6) | 0] : Math.round(battery);
+    b.textContent = shown + "%";
+    b.classList.toggle("low", shown <= 15);
+  }
+
+  async function blackout() {
+    const bo = $("#blackout");
+    bo.textContent = "";
+    bo.classList.add("on");
+    await sleep(1400);
+    bo.textContent = "NarthexOS";
+    await sleep(1300);
+    bo.textContent = "";
+    bo.classList.remove("on");
+  }
+
+  // ---------- audio ----------
+  let ac = null, input, shaper, lp, hp, bass, master, noiseBuf;
+  function audio() {
+    if (ac) return ac;
+    ac = new (window.AudioContext || window.webkitAudioContext)();
+    input = ac.createGain();
+    shaper = ac.createWaveShaper();
+    hp = ac.createBiquadFilter(); hp.type = "highpass";
+    lp = ac.createBiquadFilter(); lp.type = "lowpass";
+    bass = ac.createBiquadFilter(); bass.type = "lowshelf"; bass.frequency.value = 180;
+    master = ac.createGain();
+    input.connect(shaper).connect(hp).connect(lp).connect(bass).connect(master).connect(ac.destination);
+    noiseBuf = ac.createBuffer(1, ac.sampleRate * 2, ac.sampleRate);
+    const d = noiseBuf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    applySpeaker(); applyVolume();
+    return ac;
+  }
+  function distCurve(k) {
+    const n = 1024, c = new Float32Array(n);
+    for (let i = 0; i < n; i++) { const x = i * 2 / n - 1; c[i] = k ? ((3 + k) * x * 20 * Math.PI / 180) / (Math.PI + k * Math.abs(x)) : x; }
+    return c;
+  }
+  // El altavoz cambia la cadena por la que pasa todo el sonido
+  const SPK = [
+    { dist: 400, hp: 700, lp: 2600, bass: 0, hiss: 0.09, cuts: true },
+    { dist: 120, hp: 450, lp: 4200, bass: 0, hiss: 0.04, cuts: false },
+    { dist: 25, hp: 180, lp: 8000, bass: 0, hiss: 0.012, cuts: false },
+    { dist: 0, hp: 40, lp: 18000, bass: 0, hiss: 0, cuts: false },
+    { dist: 0, hp: 30, lp: 20000, bass: 9, hiss: 0, cuts: false },
+  ];
+  function applySpeaker() {
+    if (!ac) return;
+    const s = SPK[tier.spk];
+    shaper.curve = distCurve(s.dist);
+    hp.frequency.value = s.hp; lp.frequency.value = s.lp; bass.gain.value = s.bass;
+  }
+  function applyVolume() {
+    $("#o-vol").textContent = Math.round($("#vol").value * 100) + "%";
+    if (ac) master.gain.value = $("#mute").checked ? 0 : +$("#vol").value;
+  }
+
+  const env = (g, t0, a, peak, d, t1) => {
+    g.gain.setValueAtTime(0, t0);
+    g.gain.linearRampToValueAtTime(peak, t0 + a);
+    g.gain.setValueAtTime(peak, Math.max(t0 + a, t1 - d));
+    g.gain.linearRampToValueAtTime(0, t1);
+  };
+  function osc(type, f, t0, t1, peak = 0.3, dest = input) {
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.type = type; o.frequency.setValueAtTime(f, t0);
+    env(g, t0, 0.01, peak, 0.03, t1);
+    o.connect(g).connect(dest); o.start(t0); o.stop(t1 + 0.05);
+    return o;
+  }
+  function noise(t0, t1, peak, filterType, freq, q = 1, dest = input) {
+    const n = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain();
+    n.buffer = noiseBuf; n.loop = true;
+    f.type = filterType; f.frequency.value = freq; f.Q.value = q;
+    env(g, t0, 0.005, peak, 0.01, t1);
+    n.connect(f).connect(g).connect(dest); n.start(t0, rand(0, 1.5)); n.stop(t1 + 0.05);
+    return { n, f, g };
+  }
+  // Defectos del altavoz que acompañan a cualquier sonido: siseo y cortes
+  function speakerFlaws(t0, dur) {
+    const s = SPK[tier.spk];
+    if (s.hiss) noise(t0, t0 + dur, s.hiss, "highpass", 3000);
+    if (s.cuts) {
+      for (let i = 0; i < 2; i++) {
+        const tc = t0 + rand(0.1, Math.max(0.15, dur - 0.1));
+        input.gain.setValueAtTime(1, tc); input.gain.setValueAtTime(0.05, tc + 0.01);
+        input.gain.setValueAtTime(1, tc + 0.08);
+      }
+    }
+  }
+
+  const SOUNDS = {
+    pitido(t) { osc("sine", 1000, t, t + 0.25, 0.35); return 0.25; },
+    alarma(t) {
+      for (let i = 0; i < 8; i++) osc("square", i % 2 ? 660 : 880, t + i * 0.25, t + i * 0.25 + 0.22, 0.18);
+      return 2;
+    },
+    sirena(t) {
+      const o = osc("sawtooth", 700, t, t + 3, 0.16);
+      for (let i = 0; i < 5; i++) {
+        o.frequency.linearRampToValueAtTime(1300, t + i * 0.6 + 0.3);
+        o.frequency.linearRampToValueAtTime(700, t + i * 0.6 + 0.6);
+      }
+      return 3;
+    },
+    pedo(t) {
+      const dur = rand(0.5, 0.9);
+      const o = ac.createOscillator(), g = ac.createGain(), f = ac.createBiquadFilter();
+      o.type = "sawtooth";
+      o.frequency.setValueAtTime(rand(95, 120), t);
+      o.frequency.exponentialRampToValueAtTime(rand(45, 60), t + dur);
+      const lfo = ac.createOscillator(), lg = ac.createGain();   // el temblor
+      lfo.frequency.value = rand(22, 34); lg.gain.value = 25;
+      lfo.connect(lg).connect(o.frequency);
+      f.type = "lowpass"; f.frequency.value = 420; f.Q.value = 4;
+      env(g, t, 0.02, 0.5, 0.12, t + dur);
+      o.connect(f).connect(g).connect(input);
+      o.start(t); lfo.start(t); o.stop(t + dur + 0.05); lfo.stop(t + dur + 0.05);
+      noise(t, t + dur, 0.12, "bandpass", 180, 2);
+      return dur;
+    },
+    risa(t) {
+      // «ja ja ja»: pulsos de voz con dos formantes de la vocal «a», cada vez más graves
+      const n = 7;
+      for (let i = 0; i < n; i++) {
+        const t0 = t + i * 0.19, t1 = t0 + 0.12;
+        const o = ac.createOscillator(), g = ac.createGain();
+        o.type = "sawtooth";
+        o.frequency.setValueAtTime(330 - i * 18, t0);
+        o.frequency.linearRampToValueAtTime(290 - i * 18, t1);
+        env(g, t0, 0.015, 0.35, 0.05, t1);
+        for (const [fq, q] of [[800, 6], [1250, 8]]) {
+          const f = ac.createBiquadFilter(); f.type = "bandpass"; f.frequency.value = fq; f.Q.value = q;
+          o.connect(f).connect(g);
+        }
+        g.connect(input);
+        o.start(t0); o.stop(t1 + 0.02);
+        noise(t0, t0 + 0.04, 0.08, "bandpass", 2500, 1);   // la «j»
+      }
+      return n * 0.19;
+    },
+    aplauso(t) {
+      const dur = 2.6;
+      for (let i = 0; i < 260; i++) {
+        const x = Math.random();
+        const tc = t + dur * (1 - Math.sqrt(1 - x));        // más palmas al principio
+        noise(tc, tc + rand(0.008, 0.02), rand(0.1, 0.35), "bandpass", rand(900, 2200), 1.2);
+      }
+      return dur;
+    },
+  };
+
+  function play(name) {
+    audio();
+    if (ac.state === "suspended") ac.resume();
+    const t = ac.currentTime + 0.03;
+    const dur = SOUNDS[name](t);
+    speakerFlaws(t, dur);
+    if (name === "alarma") alarmScreen(dur);
+    if (name === "sirena") $("#ad").hidden = false;
+  }
+
+  async function alarmScreen(dur = 3) {
+    $("#alarm").classList.add("on");
+    await sleep(dur * 1000);
+    $("#alarm").classList.remove("on");
+  }
+
+  // ---------- fallos automáticos ----------
+  setInterval(() => {
+    // la batería baja según su estado
+    battery -= [0, 0.35, 0.05, 0.02, 0][tier.batt];
+    if (battery < 1) battery = 100;
+    if (tier.batt === 2 && Math.random() < 0.03) battery = Math.max(1, battery - rand(5, 15));
+    renderBattery();
+    if (!$("#auto").checked) return;
+    const r = Math.random;
+    if (r() < [0.1, 0.04, 0.012, 0, 0][tier.screen]) glitch();
+    if (r() < [0.04, 0.02, 0, 0, 0][tier.batt]) warn();
+    if (r() < [0.012, 0, 0, 0, 0][tier.batt]) blackout();
+    if (ac && r() < [0.06, 0.02, 0, 0, 0][tier.spk]) {
+      const t = ac.currentTime + 0.02;
+      osc("square", rand(1800, 3200), t, t + rand(0.04, 0.12), 0.12);   // pitido suelto
+    }
+  }, 1000);
+
+  // ---------- controles ----------
+  function setTier(key, v) {
+    tier[key] = v;
+    $({ screen: "#t-screen", batt: "#t-batt", spk: "#t-spk" }[key]).value = v;
+    $({ screen: "#o-screen", batt: "#o-batt", spk: "#o-spk" }[key]).textContent = `${v} · ${TIERS[v]}`;
+    if (key === "screen") applyScreen();
+    if (key === "spk") applySpeaker();
+    if (key === "batt") renderBattery();
+    $("#tier-desc").textContent = DESC[key][v];
+  }
+  $("#t-all").oninput = (e) => {
+    const v = +e.target.value;
+    $("#o-all").textContent = `${v} · ${TIERS[v]}`;
+    for (const k of ["screen", "batt", "spk"]) setTier(k, v);
+    $("#tier-desc").textContent = `Pantalla: ${DESC.screen[v]} Batería: ${DESC.batt[v]} Altavoz: ${DESC.spk[v]}`;
+  };
+  $("#t-screen").oninput = (e) => setTier("screen", +e.target.value);
+  $("#t-batt").oninput = (e) => setTier("batt", +e.target.value);
+  $("#t-spk").oninput = (e) => setTier("spk", +e.target.value);
+  document.querySelectorAll("[data-snd]").forEach(b => { b.onclick = () => play(b.dataset.snd); });
+  document.querySelectorAll("[data-os]").forEach(b => {
+    b.onclick = () => {
+      $("#phone").dataset.os = b.dataset.os;
+      document.querySelectorAll("#os-btns .btn").forEach(x => x.classList.toggle("on", x === b));
+    };
+  });
+  $("#b-dirty").onclick = dirty;
+  $("#b-clean").onclick = cleanAll;
+  $("#b-glitch").onclick = glitch;
+  $("#b-blackout").onclick = blackout;
+  $("#b-warn").onclick = warn;
+  $("#b-alarmscreen").onclick = () => alarmScreen(3);
+  $("#ad-close").onclick = () => { $("#ad").hidden = true; };
+  $("#vol").oninput = applyVolume;
+  $("#mute").onchange = applyVolume;
+  $("#lab-toggle").onclick = () => {
+    const open = $("#panel").classList.toggle("open");
+    $("#lab-toggle").textContent = open ? "cerrar" : "panel";
+  };
+  setInterval(() => {
+    const d = new Date();
+    $("#clock").textContent = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  }, 10000);
+
+  $("#t-all").dispatchEvent(new Event("input"));
+  applyVolume();
+  requestAnimationFrame(() => { fitSmudge(); dirty(); });
+  addEventListener("resize", fitSmudge);
+})();
+</script>
+</body>
+</html>
