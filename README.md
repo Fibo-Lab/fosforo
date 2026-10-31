@@ -2,6 +2,8 @@
 
 Prototipos web de **Narthex** (título de trabajo): un juego narrativo para móvil en el que encuentras un teléfono roto y lo usas para colarte en el mundo de las megacorporaciones.
 
+Esto es el prototipo web. El juego de verdad se hace en Unity, en el repo privado `mengerspong3/narthex`. En local van juntos: `Narthex/prototipo/` (este repo) y `Narthex/juego/` (Unity).
+
 ## Probar en el móvil
 
 Escanea el código con la cámara del teléfono (mejor con Chrome en Android):
